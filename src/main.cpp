@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     std::string networkId      = parser.getArgumentValue("--id");
     int         saveInterval   = parser.getArgumentValue("--saveinterval").empty() ? 1 : std::stoi(parser.getArgumentValue("--saveinterval"));
     int         lrInterval     = parser.getArgumentValue("--lr-interval").empty() ? 50 : std::stoi(parser.getArgumentValue("--lr-interval"));
-    float       lr             = parser.getArgumentValue("--lr").empty() ? 0.01f : std::stof(parser.getArgumentValue("--lr"));
+    float       lr             = parser.getArgumentValue("--lr").empty() ? 0.001f : std::stof(parser.getArgumentValue("--lr"));
     float       lrMultiplier   = parser.getArgumentValue("--lr-decay").empty() ? 0.1f : std::stof(parser.getArgumentValue("--lr-decay"));
     int         epochs         = std::stoi(parser.getArgumentValue("--epochs"));
 
@@ -53,19 +53,13 @@ int main(int argc, char* argv[]) {
     std::cout << "Checkpoint Path: " << checkpointPath << "\n";
     std::cout << "Save Path: " << savepath << "\n";
     std::cout << "Network ID: " << trainer->getNetworkId() << "\n";
-    std::cout << "LR Scheduler Interval: " << lrInterval << "\n";
-    std::cout << "LR Scheduler Decay: " << lrMultiplier << "\n";
-    std::cout << "Learning Rate: " << lr << "\n";
+    std::cout << "Learning Rate: " << trainer->getLearningRate() << "\n";
     std::cout << "Number of Available Threads: " << omp_get_max_threads() << "\n";
     std::cout << "Allocated threads: " << THREADS << "\n";
-
-    
 
     if (!checkpointPath.empty()) {
         trainer->loadCheckpoint(checkpointPath);
     }
-
-    trainer->dataSetLoader.init();
     
     trainer->train();
 

@@ -1,10 +1,10 @@
 # Compiler and flags
 CXX := clang++
-CXXFLAGS := -std=c++20 -O3 -Wall -flto -fuse-ld=lld -march=native -fexceptions -fopenmp -mavx2
+CXXFLAGS := -std=c++20 -O3 -flto -fuse-ld=lld -march=native -fexceptions -fopenmp -mavx2
 LDFLAGS :=
 
 # Debug compiler flags
-DEBUG_CXXFLAGS := -g -O0
+DEBUG_CXXFLAGS := -gdwarf-2 -O0 -fsanitize=address
 
 # Directories
 SRC_DIR := src

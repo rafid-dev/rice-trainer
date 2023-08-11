@@ -8,7 +8,6 @@
 
 class Trainer {
 private:
-    std::size_t batchSize = 16384;
     std::size_t epochSize = 1e7;
     std::string path;
 
@@ -27,7 +26,7 @@ public:
     std::vector<BatchGradients> batchGradients;
     std::vector<float>          losses;
 
-    Trainer(const std::string& _path, const std::size_t _batchSize) : dataSetLoader{_path, _batchSize}, batchSize(_batchSize), path(_path) {
+    Trainer(const std::string& _path, const std::size_t _batchSize) : dataSetLoader{_path, _batchSize}, path(_path) {
         batchGradients.resize(THREADS);
         losses.resize(THREADS);
         nnGradients.clear();
@@ -77,8 +76,8 @@ public:
     auto getNetworkId() const {
         return networkId;
     }
-    void getSavePath(std::string& _savePath) const {
-        _savePath = savePath;
+    auto getSavePath() const {
+        return savePath;
     }
 
     void loadCheckpoint(const std::string& _checkpointPath) {
@@ -92,10 +91,10 @@ public:
         learningRate = _learningRate;
     }
 
-    void getLearningRate(float& _learningRate) const {
-        _learningRate = learningRate;
+    auto getLearningRate() const {
+        return learningRate;
     }
-
+    
     void setSaveInterval(const int _saveInterval) {
         saveInterval = _saveInterval;
     }

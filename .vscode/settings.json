@@ -70,6 +70,7 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "unordered_map": "cpp",
-        "xhash": "cpp"
+        "xhash": "cpp",
+        "codecvt": "cpp"
     }
 }

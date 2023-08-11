@@ -14,12 +14,11 @@ constexpr int OUTPUT_SIZE = 1;
 constexpr float EVAL_SCALE = 400.0f;
 constexpr float EVAL_CP_RATIO = 0.7f;
 
-constexpr int THREADS = 10;
+constexpr int THREADS = 6;
 
 constexpr float BETA1 = 0.9f;
 constexpr float BETA2 = 0.999f;
 constexpr float EPSILON = 1e-8f;
-constexpr float ALPHA = 0.001f;
 
 constexpr std::size_t EPOCH_SIZE = 1e8;
 
