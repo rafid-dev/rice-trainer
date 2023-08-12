@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     float       lrMultiplier   = parser.getArgumentValue("--lr-decay").empty() ? 0.1f : std::stof(parser.getArgumentValue("--lr-decay"));
     int         epochs         = std::stoi(parser.getArgumentValue("--epochs"));
 
-    Trainer* trainer = new Trainer{datasetPath, 16384};
+    Trainer* trainer = new Trainer{datasetPath, BATCH_SIZE};
 
     // Configure trainer
     trainer->setNetworkId(networkId);
@@ -58,10 +58,14 @@ int main(int argc, char* argv[]) {
     std::cout << "Allocated threads: " << THREADS << "\n";
 
     if (!checkpointPath.empty()) {
+        std::cout << std::endl;
+        std::cout << "Loading checkpoint from " << checkpointPath << "\n";
         trainer->loadCheckpoint(checkpointPath);
     }
-    
+
     trainer->train();
+
+    delete trainer;
 
     return 0;
 }

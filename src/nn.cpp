@@ -19,16 +19,19 @@ const float NN::forward(Accumulator& accumulator, Features& features, Color stm)
             accumulator[j] += inputFeatures[features.features[i][stm] * HIDDEN_SIZE + j];
             accumulator[j + HIDDEN_SIZE] += inputFeatures[features.features[i][!stm] * HIDDEN_SIZE + j];
         }
+        
+    }
+
+    vectorized_ReLU<HIDDEN_SIZE>(accumulator.data());
+
+#pragma omp simd reduction(+ : output)
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        output += hiddenFeatures[i] * accumulator[i];
     }
 
 #pragma omp simd reduction(+ : output)
     for (int i = 0; i < HIDDEN_SIZE; i++) {
-        output += hiddenFeatures[i] * ReLU(accumulator[i]);
-    }
-
-#pragma omp simd reduction(+ : output)
-    for (int i = 0; i < HIDDEN_SIZE; i++) {
-        output += hiddenFeatures[i + HIDDEN_SIZE] * ReLU(accumulator[i + HIDDEN_SIZE]);
+        output += hiddenFeatures[i + HIDDEN_SIZE] * accumulator[i + HIDDEN_SIZE];
     }
 
     return output;

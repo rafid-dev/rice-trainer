@@ -4,7 +4,7 @@ CXXFLAGS := -std=c++20 -O3 -flto -fuse-ld=lld -march=native -fexceptions -fopenm
 LDFLAGS :=
 
 # Debug compiler flags
-DEBUG_CXXFLAGS := -gdwarf-2 -O0 -fsanitize=address
+DEBUG_CXXFLAGS := -gdwarf-2 -O0 -fsanitize=address -Wall
 
 # Directories
 SRC_DIR := src
