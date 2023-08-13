@@ -19,28 +19,19 @@
 
 constexpr std::size_t CHUNK_SIZE = (1 << 20);
 
+struct Features;
+
 namespace DataLoader {
 
     struct DataSetEntry {
         binpack::TrainingDataEntry entry;
 
         const float score() const {
-            // if (entry.pos.sideToMove() == chess::Color::White) {
-            //     return entry.score / EVAL_SCALE;
-            // } else {
-            //     return -entry.score / EVAL_SCALE;
-            // }
 
             return entry.score / EVAL_SCALE;
         }
 
         const float wdl() const {
-            // if (entry.pos.sideToMove() == chess::Color::White){
-            //     return entry.result == -1 ? 0.0 : entry.result == 0 ? 0.5 : 1.0;
-            // }else{
-            //     return entry.result == -1 ? 1.0 : entry.result == 0 ? 0.5 : 0.0;
-            // }
-
             return entry.result == -1 ? 1.0 : entry.result == 0 ? 0.5 : 0.0;
         }
 
@@ -48,14 +39,15 @@ namespace DataLoader {
             float p_target = 1 / (1 + expf(-score()));
             float w_target = wdl();
 
-            // return EVAL_CP_RATIO * Activation::sigmoid(score()) + (1 - EVAL_CP_RATIO) * wdl();
-
             return p_target * EVAL_CP_RATIO + w_target * (1 - EVAL_CP_RATIO);
         }
 
         const auto sideToMove() const {
             return entry.pos.sideToMove();
         }
+
+        void loadFeatures(Features& features) const;
+        Features loadFeatures() const;
     };
 
     struct DataSetLoader {

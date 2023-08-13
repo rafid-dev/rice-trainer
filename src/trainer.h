@@ -3,6 +3,8 @@
 #include "dataloader.h"
 #include "gradient.h"
 #include "types.h"
+#include "misc.h"
+#include "nn.h"
 #include <filesystem>
 #include <vector>
 
@@ -34,9 +36,10 @@ public:
 
     void clearGradientsAndLosses();
     void train();
-    void batch();
-    void loadFeatures(DataLoader::DataSetEntry& entry, Features& features);
-    void applyGradients();
+    void forward(NNTrace& trace);
+    void backward(NNTrace& trace, std::array<uint8_t, INPUT_SIZE>& active, const int threadId);
+    void batch(std::array<uint8_t, INPUT_SIZE>& active);
+    void applyGradients(std::array<uint8_t, INPUT_SIZE>& active);
 
     std::size_t getBatchSize() const {
         return dataSetLoader.batchSize;
@@ -44,13 +47,13 @@ public:
 
     void setNetworkId(const std::string& _networkId) {
         if (_networkId.empty()) {
-            std::string randomHexValue = generateRandomHexValue(4);
+            std::string randomHexValue = Misc::generateRandomHexValue(5);
             networkId                  = "net_" + randomHexValue;
         } else {
             networkId = _networkId;
             // Replace $ with a random number in the network ID
             if (networkId.find("$") != std::string::npos) {
-                std::string randomHexValue = generateRandomHexValue(4);
+                std::string randomHexValue = Misc::generateRandomHexValue(5);
                 networkId.replace(networkId.find("$"), 1, randomHexValue);
             }
         }

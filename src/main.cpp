@@ -59,12 +59,6 @@ int main(int argc, char* argv[]) {
         trainer->loadCheckpoint(checkpointPath);
         std::cout << "Loaded checkpoint from " << checkpointPath << std::endl;
 
-        std::cout << trainer->nn << std::endl;
-
-        // QuantizedNN qnn{trainer->nn};
-        // std::cout << qnn << std::endl;
-        // qnn.testFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-
         trainer->save();
     }else{
         trainer->save();

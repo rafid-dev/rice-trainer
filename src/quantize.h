@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "nn.h"
 #include <iostream>
 #include <fstream>
 

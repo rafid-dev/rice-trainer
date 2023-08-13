@@ -1,4 +1,5 @@
 #include "dataloader.h"
+#include "nn.h"
 #include <ctime>
 
 namespace DataLoader {
@@ -73,5 +74,30 @@ namespace DataLoader {
         loadNext();
         std::swap(currentData, nextData);
         loadNext();
+    }
+
+    void DataSetEntry::loadFeatures(Features& features) const{
+        const chess::Position& pos    = entry.pos;
+        chess::Bitboard        pieces = pos.piecesBB();
+
+        const chess::Square ksq_White = pos.kingSquare(chess::Color::White);
+        const chess::Square ksq_Black = pos.kingSquare(chess::Color::Black);
+
+        for (chess::Square sq : pieces) {
+            const chess::Piece piece      = pos.pieceAt(sq);
+            const std::uint8_t pieceType  = static_cast<uint8_t>(piece.type());
+            const std::uint8_t pieceColor = static_cast<uint8_t>(piece.color());
+
+            const int featureW = inputIndex(pieceType, pieceColor, static_cast<int>(sq), static_cast<uint8_t>(chess::Color::White), static_cast<int>(ksq_White));
+            const int featureB = inputIndex(pieceType, pieceColor, static_cast<int>(sq), static_cast<uint8_t>(chess::Color::Black), static_cast<int>(ksq_Black));
+
+            features.add(featureW, featureB);
+        }
+    }
+
+    Features DataSetEntry::loadFeatures() const{
+        Features features;
+        loadFeatures(features);
+        return features;
     }
 } // namespace DataLoader
