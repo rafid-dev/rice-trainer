@@ -20,7 +20,7 @@ constexpr float BETA1 = 0.9f;
 constexpr float BETA2 = 0.999f;
 constexpr float EPSILON = 1e-8f;
 
-constexpr std::size_t EPOCH_SIZE = 1e8;
+constexpr std::size_t EPOCH_SIZE = 1e9;
 
 struct Features
 {
