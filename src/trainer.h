@@ -1,10 +1,11 @@
 #pragma once
 
 #include "dataloader.h"
-#include "gradient.h"
-#include "types.h"
+#include "lrscheduler.h"
 #include "misc.h"
 #include "nn.h"
+#include "types.h"
+#include "optimizer.h"
 #include <filesystem>
 #include <vector>
 
@@ -18,28 +19,30 @@ private:
     int         maxEpochs    = 0;
     float       learningRate = 0.01;
 
-    int lrDecayInterval = 15;
-    float lrDecay     = 0.5;
-    int saveInterval = 1;
-public:
-    DataLoader::DataSetLoader   dataSetLoader;
-    NN                          nn;
-    NNGradients                 nnGradients;
-    std::vector<BatchGradients> batchGradients;
-    std::vector<float>          losses;
+    int   lrDecayInterval = 15;
+    float lrDecay         = 0.5;
+    int   saveInterval    = 1;
 
-    Trainer(const std::string& _path, const std::size_t _batchSize) : dataSetLoader{_path, _batchSize}, path(_path) {
+public:
+    DataLoader::DataSetLoader        dataSetLoader;
+    NN                               nn;
+    NNGradients                      nnGradients;
+    std::vector<BatchGradients>      batchGradients;
+    std::vector<float>               losses;
+    LearningRateScheduler::StepDecay lrScheduler;
+    Optimizer::Adam                  optimizer;
+
+    Trainer(const std::string& _path, const std::size_t _batchSize) : dataSetLoader{_path, _batchSize}, path(_path), lrScheduler(learningRate, lrDecay, lrDecayInterval), optimizer() {
         batchGradients.resize(THREADS);
         losses.resize(THREADS);
         nnGradients.clear();
     }
 
+    void loadFeatures(DataLoader::DataSetEntry& entry, Features& features);
     void clearGradientsAndLosses();
     void train();
-    void forward(NNTrace& trace);
-    void backward(NNTrace& trace, std::array<uint8_t, INPUT_SIZE>& active, const int threadId);
-    void batch(std::array<uint8_t, INPUT_SIZE>& active);
-    void applyGradients(std::array<uint8_t, INPUT_SIZE>& active);
+    void batch();
+    void applyGradients();
 
     std::size_t getBatchSize() const {
         return dataSetLoader.batchSize;
@@ -98,12 +101,21 @@ public:
 
     void setLearningRate(const float _learningRate) {
         learningRate = _learningRate;
+        lrScheduler.initial_learning_rate = learningRate;
     }
 
     auto getLearningRate() const {
         return learningRate;
     }
-    
+
+    auto getSaveInterval() const {
+        return saveInterval;
+    }
+
+    auto getMaxEpochs() const {
+        return maxEpochs;
+    }
+
     void setSaveInterval(const int _saveInterval) {
         saveInterval = _saveInterval;
     }

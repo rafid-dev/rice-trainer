@@ -2,16 +2,18 @@
 #include "types.h"
 #include <algorithm>
 
-void adamUpdate(float& v, Gradient& grad, const float gsum, const float lr) {
-    grad.M = BETA1 * grad.M + (1 - BETA1) * gsum;
-    grad.V = BETA2 * grad.V + (1 - BETA2) * gsum * gsum;
+namespace Optimizer {
+    void Adam::update(float& v, Gradient& grad, const float gsum, const float learningRate) {
+        grad.M = beta1 * grad.M + (1 - beta1) * gsum;
+        grad.V = beta2 * grad.V + (1 - beta2) * gsum * gsum;
 
-    v -= lr * grad.M / (sqrt(grad.V) + EPSILON);
-}
+        v -= learningRate * grad.M / (sqrt(grad.V) + epsilon);
+    }
 
-void adamaxUpdate(float& v, Gradient& grad, const float gsum, const float lr) {
-    grad.M = BETA1 * grad.M + (1 - BETA1) * gsum;
-    grad.V = std::max(BETA2 * grad.V, std::abs(gsum));
+    void Adamax::update(float& v, Gradient& grad, const float gsum, const float learningRate) {
+        grad.M = beta1 * grad.M + (1 - beta1) * gsum;
+        grad.V = std::max(beta2 * grad.V, std::abs(gsum));
 
-    v -= lr * grad.M / (grad.V + EPSILON);
-}
+        v -= learningRate * grad.M / (grad.V + EPSILON);
+    }
+} // namespace Optimizer

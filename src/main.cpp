@@ -46,23 +46,25 @@ int main(int argc, char* argv[]) {
     trainer->setLearningRate(lr);
 
     // Print Configurations
+    std::cout << "Number of Available Threads: " << omp_get_max_threads() << "\n";
+    std::cout << "Allocated threads: " << THREADS << "\n";
     std::cout << "Dataset Path: " << datasetPath << "\n";
     std::cout << "Checkpoint Path: " << checkpointPath << "\n";
     std::cout << "Save Path: " << savepath << "\n";
-    std::cout << "Network ID: " << trainer->getNetworkId() << "\n";
+    std::cout << "Network ID: " << trainer->getNetworkId() << "\n\n";
     std::cout << "Learning Rate: " << trainer->getLearningRate() << "\n";
-    std::cout << "Number of Available Threads: " << omp_get_max_threads() << "\n";
-    std::cout << "Allocated threads: " << THREADS << "\n";
+    std::cout << "Optimizer: " << trainer->optimizer << "\n";
+    std::cout << "LR Scheduler: " << trainer->lrScheduler << "\n";
+    std::cout << "Epochs: " << trainer->getMaxEpochs() << "\n";
+    std::cout << "Batchsize: " << trainer->getBatchSize() << "\n\n";
 
     if (!checkpointPath.empty()) {
         std::cout << "Loading checkpoint from " << checkpointPath << std::endl;
         trainer->loadCheckpoint(checkpointPath);
         std::cout << "Loaded checkpoint from " << checkpointPath << std::endl;
-
-        trainer->save();
-    }else{
-        trainer->save();
     }
+
+    std::cout << std::endl;
     
     trainer->train();
 

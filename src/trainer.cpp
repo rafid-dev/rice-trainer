@@ -5,64 +5,36 @@
 
 #define EPOCH_ERROR epochError / static_cast<double>(dataSetLoader.batchSize * batchIterations)
 
-void Trainer::forward(NNTrace& trace) {
-    trace.output = nn.forward(trace.accumulator, trace.features, trace.stm);
+inline float errorFunction(float output, float eval, float wdl) {
+    float expected = EVAL_CP_RATIO * sigmoid(eval) + (1 - EVAL_CP_RATIO) * wdl;
+    return pow(sigmoid(output) - expected, 2);
 }
 
-void Trainer::backward(NNTrace& trace, std::array<uint8_t, INPUT_SIZE>& active, const int threadId) {
-    // Load trace data
-    const auto& eval        = trace.eval;
-    const auto& wdl         = trace.wdl;
-    const auto& stm         = trace.stm;
-    const auto& output      = trace.output;
-    const auto& accumulator = trace.accumulator;
-    const auto& featureset  = trace.features;
+inline float errorGradient(float output, float eval, float wdl) {
+    float expected = EVAL_CP_RATIO * sigmoid(eval) + (1 - EVAL_CP_RATIO) * wdl;
+    return 2 * (sigmoid(output) - expected);
+}
 
-    // Accumulate loss
-    losses[threadId] += errorFunction(output, eval, wdl);
+void Trainer::loadFeatures(DataLoader::DataSetEntry& entry, Features& features) {
+    const chess::Position& pos    = entry.entry.pos;
+    chess::Bitboard        pieces = pos.piecesBB();
 
-    // Gradients
-    BatchGradients& gradients   = batchGradients[threadId];
-    const float     outGradient = errorGradient(output, eval, wdl) * sigmoidPrime(output);
+    const chess::Square ksq_White = pos.kingSquare(chess::Color::White);
+    const chess::Square ksq_Black = pos.kingSquare(chess::Color::Black);
 
-    // Hidden bias
-    gradients.hiddenBias[0] += outGradient;
+    for (chess::Square sq : pieces) {
+        const chess::Piece piece      = pos.pieceAt(sq);
+        const std::uint8_t pieceType  = static_cast<uint8_t>(piece.type());
+        const std::uint8_t pieceColor = static_cast<uint8_t>(piece.color());
 
-    // Hidden features
-    for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
-        gradients.hiddenFeatures[i] += outGradient * accumulator[i];
-    }
+        const int featureW = inputIndex(pieceType, pieceColor, static_cast<int>(sq), static_cast<uint8_t>(chess::Color::White), static_cast<int>(ksq_White));
+        const int featureB = inputIndex(pieceType, pieceColor, static_cast<int>(sq), static_cast<uint8_t>(chess::Color::Black), static_cast<int>(ksq_Black));
 
-    std::array<float, HIDDEN_SIZE * 2> hiddenLosses;
-
-    for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
-        hiddenLosses[i] = outGradient * nn.hiddenFeatures[i] * ReLUPrime(accumulator[i]);
-    }
-
-    // Input bias
-    for (int i = 0; i < HIDDEN_SIZE; ++i) {
-        gradients.inputBias[i] += hiddenLosses[i] + hiddenLosses[i + HIDDEN_SIZE];
-    }
-
-    // Input features
-    for (int i = 0; i < featureset.n; ++i) {
-        int f1 = featureset.features[i][stm];
-        int f2 = featureset.features[i][!stm];
-
-        active[f1] = 1;
-        active[f2] = 1;
-
-        for (int j = 0; j < HIDDEN_SIZE; ++j) {
-            gradients.inputFeatures[f1 * HIDDEN_SIZE + j] += hiddenLosses[j];
-            gradients.inputFeatures[f2 * HIDDEN_SIZE + j] += hiddenLosses[j + HIDDEN_SIZE];
-        }
+        features.add(featureW, featureB);
     }
 }
 
-void Trainer::batch(std::array<uint8_t, INPUT_SIZE>& active) {
-    std::array<std::array<uint8_t, INPUT_SIZE>, THREADS> activeFeatures;
-    std::memset(activeFeatures.data(), 0, sizeof(activeFeatures));
-
+void        Trainer::batch() {
 #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (int batchIdx = 0; batchIdx < dataSetLoader.batchSize; batchIdx++) {
         const int threadId = omp_get_thread_num();
@@ -70,75 +42,100 @@ void Trainer::batch(std::array<uint8_t, INPUT_SIZE>& active) {
         // Load the current batch entry
         DataLoader::DataSetEntry& entry = dataSetLoader.getEntry(batchIdx);
 
-        NNTrace trace;
+        NN::Accumulator accumulator;
+        NN::Color       stm = NN::Color(entry.sideToMove());
+        Features        featureset;
 
-        trace.features = entry.loadFeatures();
-        trace.stm  = NN::Color(entry.sideToMove());
-        trace.eval = entry.score();
-        trace.wdl  = entry.wdl();
+        loadFeatures(entry, featureset);
+
+        const auto eval = entry.score();
+        const auto wdl  = entry.wdl();
 
         //--- Forward Pass ---//
-        forward(trace);
+        const float output = nn.forward(accumulator, featureset, stm);
+
+        losses[threadId] += errorFunction(output, eval, wdl);
 
         //--- Backward Pass ---//
-        backward(trace, activeFeatures[threadId], threadId);
-    }
+        BatchGradients& gradients = batchGradients[threadId];
+        const float outGradient = errorGradient(output, eval, wdl) * sigmoidPrime(output);
 
-    for (int i = 0; i < THREADS; ++i) {
-        for (int j = 0; j < INPUT_SIZE; ++j) {
-            active[j] |= activeFeatures[i][j];
+        // Hidden bias
+        gradients.hiddenBias[0] += outGradient;
+
+        // Hidden features
+        for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
+            gradients.hiddenFeatures[i] += outGradient * accumulator[i];
+        }
+
+        std::array<float, HIDDEN_SIZE * 2> hiddenLosses;
+
+        for (int i = 0; i < HIDDEN_SIZE * 2; ++i){
+            hiddenLosses[i] = outGradient * nn.hiddenFeatures[i] * ReLUPrime(accumulator[i]);
+        }
+
+        // Input bias
+        for (int i = 0; i < HIDDEN_SIZE; ++i){
+            gradients.inputBias[i] += hiddenLosses[i] + hiddenLosses[i + HIDDEN_SIZE];
+        }
+
+        // Input features
+        for (int i = 0; i < featureset.n;++i){
+            int f1 = featureset.features[i][stm];
+            int f2 = featureset.features[i][!stm];
+
+            for (int j = 0; j < HIDDEN_SIZE; ++j){
+                gradients.inputFeatures[f1 * HIDDEN_SIZE + j] += hiddenLosses[j];
+                gradients.inputFeatures[f2 * HIDDEN_SIZE + j] += hiddenLosses[j + HIDDEN_SIZE];
+            }
         }
     }
 }
 
-void        Trainer::applyGradients(std::array<uint8_t, INPUT_SIZE>& active) {
+void Trainer::applyGradients() {
+
 #pragma omp parallel for schedule(static) num_threads(THREADS)
-    for (int i = 0; i < INPUT_SIZE; ++i) {
-        if (!active[i])
-            continue;
+    for (int i = 0; i < INPUT_SIZE * HIDDEN_SIZE; ++i){
+        float gradientSum = 0;
 
-        for (int j = 0; j < HIDDEN_SIZE; ++j) {
-            int index = i * HIDDEN_SIZE + j;
-
-            float g = 0;
-
-            for (int k = 0; k < THREADS; ++k) {
-                g += batchGradients[k].inputFeatures[index];
-            }
-            adamUpdate(nn.inputFeatures[i], nnGradients.inputFeatures[i], g, learningRate);
+        for (int j = 0; j < THREADS; ++j){
+            gradientSum += batchGradients[j].inputFeatures[i];
         }
+
+        optimizer.update(nn.inputFeatures[i], nnGradients.inputFeatures[i], gradientSum, learningRate);
     }
 
 #pragma omp parallel for schedule(static) num_threads(THREADS)
-    for (int i = 0; i < HIDDEN_SIZE; ++i) {
+    for (int i = 0; i < HIDDEN_SIZE; ++i){
         float gradientSum = 0;
 
-        for (int j = 0; j < THREADS; ++j) {
+        for (int j = 0; j < THREADS; ++j){
             gradientSum += batchGradients[j].inputBias[i];
         }
 
-        adamUpdate(nn.inputBias[i], nnGradients.inputBias[i], gradientSum, learningRate);
+        optimizer.update(nn.inputBias[i], nnGradients.inputBias[i], gradientSum, learningRate);
     }
 
+    
     // --- Hidden Features ---//
 #pragma omp parallel for schedule(static) num_threads(THREADS)
-    for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
+    for (int i = 0; i < HIDDEN_SIZE * 2; ++i){
         float gradientSum = 0;
 
-        for (int j = 0; j < THREADS; ++j) {
+        for (int j = 0; j < THREADS; ++j){
             gradientSum += batchGradients[j].hiddenFeatures[i];
         }
 
-        adamUpdate(nn.hiddenFeatures[i], nnGradients.hiddenFeatures[i], gradientSum, learningRate);
+        optimizer.update(nn.hiddenFeatures[i], nnGradients.hiddenFeatures[i], gradientSum, learningRate);
     }
 
     //-- Hidden Bias --//
     float gradientSum = 0;
-    for (int i = 0; i < THREADS; ++i) {
+    for (int i = 0; i < THREADS; ++i){
         gradientSum += batchGradients[i].hiddenBias[0];
     }
 
-    adamUpdate(nn.hiddenBias[0], nnGradients.hiddenBias[0], gradientSum, learningRate);
+    optimizer.update(nn.hiddenBias[0], nnGradients.hiddenBias[0], gradientSum, learningRate);
 }
 
 void Trainer::train() {
@@ -159,11 +156,8 @@ void Trainer::train() {
             // Clear gradients and losses
             clearGradientsAndLosses();
 
-            // Active inputs
-            std::array<uint8_t, INPUT_SIZE> active;
-
             // Perform batch operations
-            batch(active);
+            batch();
 
             // Calculate batch error
             for (int threadId = 0; threadId < THREADS; ++threadId) {
@@ -174,7 +168,7 @@ void Trainer::train() {
             epochError += batchError;
 
             // Gradient descent
-            applyGradients(active);
+            applyGradients();
 
             // Load the next batch
             dataSetLoader.loadNextBatch();
@@ -200,6 +194,10 @@ void Trainer::train() {
         if (epoch % lrDecayInterval == 0) {
             std::cout << "Decaying learning rate" << std::endl;
             learningRate *= lrDecay;
+        }
+
+        if (epoch % 100 == 0) {
+            dataSetLoader.shuffle();
         }
 
         lossFile << epoch << "," << EPOCH_ERROR << std::endl;

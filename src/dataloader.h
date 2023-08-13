@@ -69,7 +69,6 @@ namespace DataLoader {
 
         DataSetLoader(const std::string& _path, const std::size_t _batchSize) : reader{_path}, path{_path}, batchSize{_batchSize} {
             init();
-            std::cout << "Loaded " << _path << " with batch size " << _batchSize << std::endl;
         }
 
         void          loadNext();
@@ -78,6 +77,11 @@ namespace DataLoader {
         void          shuffle();
         DataSetEntry& getEntry(const int index) {
             return currentData[positionIndex + index];
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const DataSetLoader& data_set_loader) {
+            os << "DataSetLoader(batchSize=" << data_set_loader.batchSize << ", positionIndex=" << data_set_loader.positionIndex << ")";
+            return os;
         }
     };
 

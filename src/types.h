@@ -17,10 +17,6 @@ constexpr float EVAL_CP_RATIO = 0.7f;
 
 constexpr int THREADS = 8;
 
-constexpr float BETA1 = 0.9f;
-constexpr float BETA2 = 0.999f;
-constexpr float EPSILON = 1e-8f;
-
 constexpr std::size_t EPOCH_SIZE = 1e9;
 
 static inline int inputIndex(uint8_t pieceType, uint8_t pieceColor, int square, uint8_t view, int kingSquare) {
