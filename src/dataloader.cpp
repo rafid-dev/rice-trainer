@@ -40,17 +40,7 @@ namespace DataLoader {
             bool earlySkip = positionEntry.entry.ply <= 16;
             bool filter = positionEntry.entry.isInCheck() || positionEntry.entry.isCapturingMove();
 
-            if (positionEntry.entry.score == 32002) {
-                counter--;
-                continue;
-            }
-            
-            if (earlySkip || filter) {
-                counter--;
-                continue;
-            }
-
-            if (randomProbability(gen) < 0.3) {
+            if (positionEntry.entry.score == 32002 || earlySkip || filter || randomProbability(gen) < 0.3) {
                 counter--;
                 continue;
             }
@@ -62,13 +52,13 @@ namespace DataLoader {
     void DataSetLoader::shuffle() {
         std::random_device rd;
         std::mt19937 mt{rd()};
-        std::iota(permuteShuffle.begin(), permuteShuffle.end(), 0);
         std::shuffle(permuteShuffle.begin(), permuteShuffle.end(), mt);
     }
 
     void DataSetLoader::init() {
         positionIndex = 0;
 
+        std::iota(permuteShuffle.begin(), permuteShuffle.end(), 0);
         shuffle();
 
         loadNext();

@@ -27,7 +27,6 @@ namespace DataLoader {
         binpack::TrainingDataEntry entry;
 
         const float score() const {
-
             return entry.score / EVAL_SCALE;
         }
 
@@ -61,7 +60,7 @@ namespace DataLoader {
         std::size_t positionIndex = 0;
 
         std::thread readingThread;
-
+        std::atomic<bool> dataLoaded = false;
 
         DataSetLoader(const std::string& _path) : reader{_path}, path{_path} {
             init();

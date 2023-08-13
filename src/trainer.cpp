@@ -34,7 +34,9 @@ void Trainer::loadFeatures(DataLoader::DataSetEntry& entry, Features& features) 
     }
 }
 
-void        Trainer::batch() {
+void Trainer::batch(std::array<uint8_t, INPUT_SIZE>& active) {
+    std::array<std::array<uint8_t, INPUT_SIZE>, THREADS> actives;
+    std::memset(actives.data(), 0, sizeof(actives));
 #pragma omp parallel for schedule(static) num_threads(THREADS)
     for (int batchIdx = 0; batchIdx < dataSetLoader.batchSize; batchIdx++) {
         const int threadId = omp_get_thread_num();
@@ -42,7 +44,7 @@ void        Trainer::batch() {
         // Load the current batch entry
         DataLoader::DataSetEntry& entry = dataSetLoader.getEntry(batchIdx);
 
-        NN::Accumulator accumulator;
+        alignas(32) NN::Accumulator accumulator;
         NN::Color       stm = NN::Color(entry.sideToMove());
         Features        featureset;
 
@@ -57,72 +59,90 @@ void        Trainer::batch() {
         losses[threadId] += errorFunction(output, eval, wdl);
 
         //--- Backward Pass ---//
-        BatchGradients& gradients = batchGradients[threadId];
-        const float outGradient = errorGradient(output, eval, wdl) * sigmoidPrime(output);
+        BatchGradients& gradients   = batchGradients[threadId];
+        const float     outGradient = errorGradient(output, eval, wdl) * sigmoidPrime(output);
 
         // Hidden bias
         gradients.hiddenBias[0] += outGradient;
 
         // Hidden features
+        #pragma omp simd
         for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
             gradients.hiddenFeatures[i] += outGradient * accumulator[i];
         }
 
         std::array<float, HIDDEN_SIZE * 2> hiddenLosses;
 
-        for (int i = 0; i < HIDDEN_SIZE * 2; ++i){
+        #pragma omp simd
+        for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
             hiddenLosses[i] = outGradient * nn.hiddenFeatures[i] * ReLUPrime(accumulator[i]);
         }
 
         // Input bias
-        for (int i = 0; i < HIDDEN_SIZE; ++i){
+        #pragma omp simd
+        for (int i = 0; i < HIDDEN_SIZE; ++i) {
             gradients.inputBias[i] += hiddenLosses[i] + hiddenLosses[i + HIDDEN_SIZE];
         }
 
         // Input features
-        for (int i = 0; i < featureset.n;++i){
+        for (int i = 0; i < featureset.n; ++i) {
             int f1 = featureset.features[i][stm];
             int f2 = featureset.features[i][!stm];
 
-            for (int j = 0; j < HIDDEN_SIZE; ++j){
+            actives[threadId][f1] = 1;
+            actives[threadId][f2] = 1;
+
+            #pragma omp simd
+            for (int j = 0; j < HIDDEN_SIZE; ++j) {
                 gradients.inputFeatures[f1 * HIDDEN_SIZE + j] += hiddenLosses[j];
                 gradients.inputFeatures[f2 * HIDDEN_SIZE + j] += hiddenLosses[j + HIDDEN_SIZE];
             }
         }
     }
+
+#pragma for schedule(static) num_threads(THREADS)
+    for (int i = 0; i < INPUT_SIZE; ++i) {
+        for (int j = 0; j < THREADS; ++j) {
+            active[i] |= actives[j][i];
+        }
+    }
 }
 
-void Trainer::applyGradients() {
-
+void        Trainer::applyGradients(std::array<uint8_t, INPUT_SIZE>& actives) {
 #pragma omp parallel for schedule(static) num_threads(THREADS)
-    for (int i = 0; i < INPUT_SIZE * HIDDEN_SIZE; ++i){
-        float gradientSum = 0;
+    for (int i = 0; i < INPUT_SIZE; ++i) {
+        if (!actives[i])
+            continue;
 
-        for (int j = 0; j < THREADS; ++j){
-            gradientSum += batchGradients[j].inputFeatures[i];
+        for (int j = 0; j < HIDDEN_SIZE; ++j) {
+            int   index = i * HIDDEN_SIZE + j;
+            float gradientSum = 0;
+
+            for (int k = 0; k < THREADS; ++k) {
+                gradientSum += batchGradients[k].inputFeatures[index];
+            }
+
+            optimizer.update(nn.inputFeatures[index], nnGradients.inputFeatures[index], gradientSum, learningRate);
         }
-
-        optimizer.update(nn.inputFeatures[i], nnGradients.inputFeatures[i], gradientSum, learningRate);
     }
 
 #pragma omp parallel for schedule(static) num_threads(THREADS)
-    for (int i = 0; i < HIDDEN_SIZE; ++i){
+    for (int i = 0; i < HIDDEN_SIZE; ++i) {
         float gradientSum = 0;
 
-        for (int j = 0; j < THREADS; ++j){
+        for (int j = 0; j < THREADS; ++j) {
             gradientSum += batchGradients[j].inputBias[i];
         }
 
         optimizer.update(nn.inputBias[i], nnGradients.inputBias[i], gradientSum, learningRate);
     }
 
-    
     // --- Hidden Features ---//
 #pragma omp parallel for schedule(static) num_threads(THREADS)
-    for (int i = 0; i < HIDDEN_SIZE * 2; ++i){
+    for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
         float gradientSum = 0;
 
-        for (int j = 0; j < THREADS; ++j){
+        for (int j = 0; j < THREADS; ++j) {
             gradientSum += batchGradients[j].hiddenFeatures[i];
         }
 
@@ -131,7 +151,7 @@ void Trainer::applyGradients() {
 
     //-- Hidden Bias --//
     float gradientSum = 0;
-    for (int i = 0; i < THREADS; ++i){
+    for (int i = 0; i < THREADS; ++i) {
         gradientSum += batchGradients[i].hiddenBias[0];
     }
 
@@ -156,8 +176,10 @@ void Trainer::train() {
             // Clear gradients and losses
             clearGradientsAndLosses();
 
+            std::array<uint8_t, INPUT_SIZE> actives;
+
             // Perform batch operations
-            batch();
+            batch(actives);
 
             // Calculate batch error
             for (int threadId = 0; threadId < THREADS; ++threadId) {
@@ -168,7 +190,7 @@ void Trainer::train() {
             epochError += batchError;
 
             // Gradient descent
-            applyGradients();
+            applyGradients(actives);
 
             // Load the next batch
             dataSetLoader.loadNextBatch();
@@ -191,14 +213,7 @@ void Trainer::train() {
             save(std::to_string(epoch));
         }
 
-        if (epoch % lrDecayInterval == 0) {
-            std::cout << "Decaying learning rate" << std::endl;
-            learningRate *= lrDecay;
-        }
-
-        if (epoch % 100 == 0) {
-            dataSetLoader.shuffle();
-        }
+        learningRate = lrScheduler.get_learning_rate(epoch);
 
         lossFile << epoch << "," << EPOCH_ERROR << std::endl;
     }

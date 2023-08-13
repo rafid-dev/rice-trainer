@@ -64,9 +64,7 @@ float NN::forward(Accumulator& accumulator, Features& features, Color stm) const
         }
     }
     
-    for (int i = 0; i < HIDDEN_SIZE * 2; ++i){
-        accumulator[i] = ReLU(accumulator[i]);
-    }
+    vecReLU<HIDDEN_SIZE * 2>(accumulator.data());
 
     #pragma omp simd reduction(+:output)
     for (int i = 0; i < HIDDEN_SIZE; ++i){

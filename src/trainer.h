@@ -41,8 +41,8 @@ public:
     void loadFeatures(DataLoader::DataSetEntry& entry, Features& features);
     void clearGradientsAndLosses();
     void train();
-    void batch();
-    void applyGradients();
+    void batch(std::array<uint8_t, INPUT_SIZE>& active);
+    void applyGradients(std::array<uint8_t, INPUT_SIZE>& active);
 
     std::size_t getBatchSize() const {
         return dataSetLoader.batchSize;
