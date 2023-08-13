@@ -15,8 +15,8 @@ BIN_DIR := bin
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
-# Binary name (set to RiceTrainer)
-TARGET := $(BIN_DIR)/RiceTrainer
+# Binary name (set to CarbonTrainer)
+TARGET := $(BIN_DIR)/CarbonTrainer
 
 # Append .exe to the binary name on Windows
 ifeq ($(OS),Windows_NT)
