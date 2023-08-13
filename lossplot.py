@@ -1,12 +1,15 @@
-import sys
+import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 
-if len(sys.argv) != 2:
-    print("Usage: python script_name.py <csv_file_path>")
-    sys.exit(1)
+# Set up argument parser
+parser = argparse.ArgumentParser(description='Plot epoch and error data.')
+parser.add_argument('csv_file', type=str, help='Path to CSV file containing epoch and error data')
+parser.add_argument('--logx', action='store_true', help='Use logarithmic scale for x-axis')
 
-csv_file_path = sys.argv[1]
+args = parser.parse_args()
+
+csv_file_path = args.csv_file
 
 try:
     # Read the CSV file
@@ -16,13 +19,16 @@ try:
     epochs = data['epoch']
     errors = data['avg_epoch_error']
 
-    # Create a line plot with logarithmic x-axis
+    # Create a line plot
     plt.figure(figsize=(10, 6))
     plt.plot(epochs, errors, marker='o')
     plt.title('Epoch vs. Average Epoch Error')
     plt.xlabel('Epoch')
     plt.ylabel('Average Epoch Error')
-    plt.xscale('log')  # Set x-axis to logarithmic scale
+
+    if args.logx:
+        plt.xscale('log')  # Set x-axis to logarithmic scale
+
     plt.grid(True)
     plt.show()
 

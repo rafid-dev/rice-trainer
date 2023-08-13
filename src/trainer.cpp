@@ -189,6 +189,7 @@ void Trainer::train() {
         // Save the network
         if (epoch % saveInterval == 0) {
             save(std::to_string(epoch));
+            
         }
 
         if (epoch % lrDecayInterval == 0) {

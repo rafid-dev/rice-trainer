@@ -1,5 +1,6 @@
 #include "nn.h"
 #include "types.h"
+#include "quantize.h"
 #include <fstream>
 #include <iostream>
 #include <omp.h>
@@ -44,7 +45,7 @@ void NN::load(const std::string& path) {
     if (file) {
         file.read(reinterpret_cast<char*>(inputFeatures.data()), sizeof(inputFeatures));
         file.read(reinterpret_cast<char*>(inputBias.data()), sizeof(inputBias));
-        file.read(reinterpret_cast<char*>(inputFeatures.data()), sizeof(inputFeatures));
+        file.read(reinterpret_cast<char*>(hiddenFeatures.data()), sizeof(hiddenFeatures));
         file.read(reinterpret_cast<char*>(hiddenBias.data()), sizeof(hiddenBias));
     } else {
         std::cout << "Couldn't read checkpoint file " << path << std::endl;
@@ -57,9 +58,15 @@ void NN::save(const std::string& path) {
     if (file) {
         file.write(reinterpret_cast<char*>(inputFeatures.data()), sizeof(inputFeatures));
         file.write(reinterpret_cast<char*>(inputBias.data()), sizeof(inputBias));
-        file.write(reinterpret_cast<char*>(inputFeatures.data()), sizeof(inputFeatures));
+        file.write(reinterpret_cast<char*>(hiddenFeatures.data()), sizeof(hiddenFeatures));
         file.write(reinterpret_cast<char*>(hiddenBias.data()), sizeof(hiddenBias));
     } else {
         std::cout << "Couldn't write checkpoint file " << path << std::endl;
     }
+}
+
+void NN::quantize(const std::string& path){
+    QuantizedNN qnn{*this, true};
+    std::cout << qnn << std::endl;
+    qnn.save(path);
 }

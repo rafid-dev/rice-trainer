@@ -58,10 +58,17 @@ int main(int argc, char* argv[]) {
     std::cout << "Allocated threads: " << THREADS << "\n";
 
     if (!checkpointPath.empty()) {
+        std::cout << "Loading checkpoint from " << checkpointPath << std::endl;
         trainer->loadCheckpoint(checkpointPath);
+
+        std::cout << "Loaded checkpoint from " << checkpointPath << std::endl;
+
+        std::cout << trainer->nn << std::endl;
+
+        trainer->nn.quantize("net_quant.nn");
     }
     
-    trainer->train();
+    // trainer->train();
 
     return 0;
 }

@@ -6,6 +6,7 @@
 #include <cstring>
 #include <sstream>
 #include <chrono>
+#include <iomanip>
 
 constexpr int INPUT_SIZE = 64 * 6 * 2;
 constexpr int HIDDEN_SIZE = 256;
@@ -21,6 +22,9 @@ constexpr float BETA2 = 0.999f;
 constexpr float EPSILON = 1e-8f;
 
 constexpr std::size_t EPOCH_SIZE = 1e9;
+
+constexpr int Q1 = 8;
+constexpr int Q2 = 64;
 
 struct Features
 {
@@ -69,6 +73,35 @@ struct NN {
     const float forward(Accumulator& accumulator, Features& features, Color stm) const;
     void load(const std::string& path);
     void save(const std::string& path);
+    void quantize(const std::string& path);
+
+    friend std::ostream& operator<<(std::ostream& os, const NN& nn) {
+        os << "Neural Network Summary:" << std::endl;
+
+        os << "Input Features:" << std::endl;
+        for (int i = 0; i < 16; i++) {
+            os << std::setw(5) << nn.inputFeatures[i] << " ";
+        }
+        os << std::endl;
+
+        os << "Input Bias:" << std::endl;
+        for (int i = 0; i < 16; i++) {
+            os << std::setw(5) << nn.inputBias[i] << " ";
+        }
+        os << std::endl;
+
+        os << "Hidden Features:" << std::endl;
+        for (int i = 0; i < 16; i++) {
+            os << std::setw(5) << nn.hiddenFeatures[i] << " ";
+        }
+        os << std::endl;
+
+        os << "Hidden Bias:";
+        os << std::setw(5) << nn.hiddenBias[0];
+        os << std::endl;
+
+        return os;
+    }
 };
 
 static inline std::string generateRandomHexValue(int numDigits) {
