@@ -67,6 +67,5 @@ void NN::save(const std::string& path) {
 
 void NN::quantize(const std::string& path){
     QuantizedNN qnn{*this, true};
-    std::cout << qnn << std::endl;
     qnn.save(path);
 }

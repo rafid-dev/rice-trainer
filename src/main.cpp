@@ -10,8 +10,6 @@ int main(int argc, char* argv[]) {
     parser.addArgument("--epochs", "Number of epochs to train for.");
     parser.addArgument("--id", "Network ID. Leave for random. Use '$' for a random number placeholder.", true);
     parser.addArgument("--lr", "Learning rate. (Default 0.001)", true);
-    parser.addArgument("--lr-interval", "LR scheduler intervals. (Default 50)", true);
-    parser.addArgument("--lr-decay", "LR scheduler decay. (Default 0.1)", true);
     parser.addArgument("--checkpoint", "Path to the checkpoint to load from.", true);
     parser.addArgument("--savepath", "Path to where checkpoints will be saved.", true);
     parser.addArgument("--saveinterval", "Interval for saving checkpoints.", true);
@@ -34,10 +32,8 @@ int main(int argc, char* argv[]) {
     std::string savepath       = parser.getArgumentValue("--savepath");
     std::string networkId      = parser.getArgumentValue("--id");
     int         saveInterval   = parser.getArgumentValue("--saveinterval").empty() ? 1 : std::stoi(parser.getArgumentValue("--saveinterval"));
-    int         lrInterval     = parser.getArgumentValue("--lr-interval").empty() ? 50 : std::stoi(parser.getArgumentValue("--lr-interval"));
-    float       lr             = parser.getArgumentValue("--lr").empty() ? 0.001f : std::stof(parser.getArgumentValue("--lr"));
-    float       lrMultiplier   = parser.getArgumentValue("--lr-decay").empty() ? 0.1f : std::stof(parser.getArgumentValue("--lr-decay"));
     int         epochs         = std::stoi(parser.getArgumentValue("--epochs"));
+    float       lr             = parser.getArgumentValue("--lr").empty() ? 0.001f : std::stof(parser.getArgumentValue("--lr"));
 
     Trainer* trainer = new Trainer{datasetPath, 16384};
 
@@ -60,15 +56,14 @@ int main(int argc, char* argv[]) {
     if (!checkpointPath.empty()) {
         std::cout << "Loading checkpoint from " << checkpointPath << std::endl;
         trainer->loadCheckpoint(checkpointPath);
-
         std::cout << "Loaded checkpoint from " << checkpointPath << std::endl;
-
-        std::cout << trainer->nn << std::endl;
-
-        trainer->nn.quantize("net_quant.nn");
+    }else{
+        trainer->save();
     }
+
+    std::cout << trainer->nn << std::endl;
     
-    // trainer->train();
+    trainer->train();
 
     return 0;
 }

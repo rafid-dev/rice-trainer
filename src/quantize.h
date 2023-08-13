@@ -66,8 +66,6 @@ class QuantizedNN {
             file.write(reinterpret_cast<char*>(inputBias.data()), sizeof(inputBias));
             file.write(reinterpret_cast<char*>(hiddenFeatures.data()), sizeof(hiddenFeatures));
             file.write(reinterpret_cast<char*>(hiddenBias.data()), sizeof(hiddenBias));
-
-            std::cout << "expected size: " << sizeof(inputFeatures) + sizeof(inputBias) + sizeof(hiddenFeatures) + sizeof(hiddenBias) << "\n";
         }else{
             std::cout << "Couldn't write quantized file " << path << std::endl;
         }

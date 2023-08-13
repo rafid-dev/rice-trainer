@@ -16,7 +16,7 @@ private:
     int         maxEpochs    = 0;
     float       learningRate = 0.01;
 
-    int lrDecayInterval = 100;
+    int lrDecayInterval = 15;
     float lrDecay     = 0.5;
     int saveInterval = 1;
 public:
@@ -64,6 +64,7 @@ public:
 
     void save(const std::string& epoch = "") {
         nn.save(savePath + "/checkpoints/" + networkId + "_ep" + epoch + ".nn");
+        nn.quantize(savePath + "/quantized/" + networkId + "_ep" + epoch + ".nn");
     }
 
     void setMaxEpochs(const int _maxEpochs) {
