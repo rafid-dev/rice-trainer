@@ -15,16 +15,13 @@ constexpr int OUTPUT_SIZE = 1;
 constexpr float EVAL_SCALE = 400.0f;
 constexpr float EVAL_CP_RATIO = 0.7f;
 
-constexpr int THREADS = 6;
+constexpr int THREADS = 8;
 
 constexpr float BETA1 = 0.9f;
 constexpr float BETA2 = 0.999f;
 constexpr float EPSILON = 1e-8f;
 
 constexpr std::size_t EPOCH_SIZE = 1e9;
-
-constexpr int Q1 = 8;
-constexpr int Q2 = 64;
 
 struct Features
 {
@@ -70,10 +67,11 @@ struct NN {
         std::memset(hiddenBias.data(), 0, sizeof(float) * OUTPUT_SIZE);
     }
 
+    void testFen(const std::string& fen);
     const float forward(Accumulator& accumulator, Features& features, Color stm) const;
     void load(const std::string& path);
     void save(const std::string& path);
-    void quantize(const std::string& path);
+    void quantize(const std::string& path, bool print = false);
 
     friend std::ostream& operator<<(std::ostream& os, const NN& nn) {
         os << "Neural Network Summary:" << std::endl;

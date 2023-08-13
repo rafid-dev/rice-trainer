@@ -1,5 +1,6 @@
 #include "argparse.h"
 #include "trainer.h"
+#include "quantize.h"
 
 #include <omp.h>
 #include <sstream>
@@ -57,11 +58,17 @@ int main(int argc, char* argv[]) {
         std::cout << "Loading checkpoint from " << checkpointPath << std::endl;
         trainer->loadCheckpoint(checkpointPath);
         std::cout << "Loaded checkpoint from " << checkpointPath << std::endl;
+
+        std::cout << trainer->nn << std::endl;
+
+        // QuantizedNN qnn{trainer->nn};
+        // std::cout << qnn << std::endl;
+        // qnn.testFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+
+        trainer->save();
     }else{
         trainer->save();
     }
-
-    std::cout << trainer->nn << std::endl;
     
     trainer->train();
 

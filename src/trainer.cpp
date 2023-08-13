@@ -196,10 +196,6 @@ void Trainer::train() {
             learningRate *= lrDecay;
         }
 
-        if (epoch % 100 == 0) {
-            dataSetLoader.shuffle();
-        }
-
         lossFile << epoch << "," << EPOCH_ERROR << std::endl;
     }
 }

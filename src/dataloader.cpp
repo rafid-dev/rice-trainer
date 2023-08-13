@@ -21,6 +21,10 @@ namespace DataLoader {
     }
 
     void DataSetLoader::loadNext() {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> randomProbability(0.0, 1.0);
+
         for (std::size_t counter = 0; counter < CHUNK_SIZE; ++counter) {
             // If we finished, go back to the beginning
             if (!reader.hasNext()) {
@@ -44,11 +48,19 @@ namespace DataLoader {
                 counter--;
                 continue;
             }
+
+            if (randomProbability(gen) < 0.3) {
+                counter--;
+                continue;
+            }
         }
+
+        shuffle();
     }
 
     void DataSetLoader::shuffle() {
-        std::mt19937 mt{static_cast<std::mt19937::result_type>(69)};
+        std::random_device rd;
+        std::mt19937 mt{rd()};
         std::iota(permuteShuffle.begin(), permuteShuffle.end(), 0);
         std::shuffle(permuteShuffle.begin(), permuteShuffle.end(), mt);
     }

@@ -63,7 +63,12 @@ public:
     }
 
     void save(const std::string& epoch = "") {
-        nn.save(savePath + "/checkpoints/" + networkId + "_ep" + epoch + ".nn");
+        if (epoch.empty()) {
+            nn.save(savePath + "/checkpoints/" + networkId + ".ckpt");
+            nn.quantize(savePath + "/quantized/" + networkId + ".nn", true);
+            return;
+        }
+        nn.save(savePath + "/checkpoints/" + networkId + "_ep" + epoch + ".ckpt");
         nn.quantize(savePath + "/quantized/" + networkId + "_ep" + epoch + ".nn");
     }
 

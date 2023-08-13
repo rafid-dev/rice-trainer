@@ -4,9 +4,12 @@
 #include <iostream>
 #include <fstream>
 
+constexpr int Q1 = 64;
+constexpr int Q2 = 128;
+
 class QuantizedNN {
     public:
-    using input_type = int8_t;
+    using input_type = int16_t;
     using hidden_type = int16_t;
     using Accumulator = std::array<input_type, HIDDEN_SIZE * 2>;
     using Color = uint8_t;
@@ -70,6 +73,9 @@ class QuantizedNN {
             std::cout << "Couldn't write quantized file " << path << std::endl;
         }
     }
+
+    void testFen(const std::string& fen);
+    const int32_t forward(Accumulator& accumulator, Features& features, Color stm) const;
 
     friend std::ostream& operator<<(std::ostream& os, const QuantizedNN& nn) {
         os << "Neural Network Summary:" << std::endl;
