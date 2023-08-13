@@ -13,7 +13,6 @@ int main(int argc, char* argv[]) {
     parser.addArgument("--lr", "Learning rate. (Default 0.001)", true);
     parser.addArgument("--checkpoint", "Path to the checkpoint to load from.", true);
     parser.addArgument("--savepath", "Path to where checkpoints will be saved.", true);
-    parser.addArgument("--saveinterval", "Interval for saving checkpoints.", true);
     parser.setProgramName(argv[0]);
 
     // Print help and exit if no arguments or --help flag provided
@@ -32,7 +31,6 @@ int main(int argc, char* argv[]) {
     std::string checkpointPath = parser.getArgumentValue("--checkpoint");
     std::string savepath       = parser.getArgumentValue("--savepath");
     std::string networkId      = parser.getArgumentValue("--id");
-    int         saveInterval   = parser.getArgumentValue("--saveinterval").empty() ? 1 : std::stoi(parser.getArgumentValue("--saveinterval"));
     int         epochs         = std::stoi(parser.getArgumentValue("--epochs"));
     float       lr             = parser.getArgumentValue("--lr").empty() ? 0.001f : std::stof(parser.getArgumentValue("--lr"));
 
@@ -41,7 +39,6 @@ int main(int argc, char* argv[]) {
     // Configure trainer
     trainer->setNetworkId(networkId);
     trainer->setMaxEpochs(epochs);
-    trainer->setSaveInterval(saveInterval);
     trainer->setSavePath(savepath);
     trainer->setLearningRate(lr);
 

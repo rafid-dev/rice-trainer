@@ -162,12 +162,12 @@ void Trainer::train() {
     std::ofstream lossFile(savePath + "/loss.csv", std::ios::app);
     lossFile << "epoch,avg_epoch_error" << std::endl;
 
+    const std::size_t batchSize = dataSetLoader.batchSize;
+
     for (int epoch = 1; epoch <= maxEpochs; ++epoch) {
         std::uint64_t start           = Misc::getTimeMs();
         std::size_t   batchIterations = 0;
         double        epochError      = 0.0;
-
-        const std::size_t batchSize = dataSetLoader.batchSize;
 
         for (int b = 0; b < EPOCH_SIZE / batchSize; ++b) {
             batchIterations++;
@@ -213,7 +213,8 @@ void Trainer::train() {
             save(std::to_string(epoch));
         }
 
-        learningRate = lrScheduler.get_learning_rate(epoch);
+        lrScheduler.step();
+        learningRate = lrScheduler.getLearningRate();
 
         lossFile << epoch << "," << EPOCH_ERROR << std::endl;
     }

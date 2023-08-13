@@ -32,7 +32,7 @@ public:
     LearningRateScheduler::StepDecay lrScheduler;
     Optimizer::Adam                  optimizer;
 
-    Trainer(const std::string& _path, const std::size_t _batchSize) : dataSetLoader{_path, _batchSize}, path(_path), lrScheduler(learningRate, lrDecay, lrDecayInterval), optimizer() {
+    Trainer(const std::string& _path, const std::size_t _batchSize) : dataSetLoader{_path, _batchSize}, path(_path), lrScheduler(learningRate, lrDecayInterval, lrDecay), optimizer() {
         batchGradients.resize(THREADS);
         losses.resize(THREADS);
         nnGradients.clear();
