@@ -213,8 +213,7 @@ void Trainer::train() {
             save(std::to_string(epoch));
         }
 
-        lrScheduler.step();
-        learningRate = lrScheduler.getLearningRate();
+        lrScheduler.step(learningRate);
 
         lossFile << epoch << "," << EPOCH_ERROR << std::endl;
     }

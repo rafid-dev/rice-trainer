@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 namespace LearningRateScheduler {
     class LearningRateScheduler {
@@ -17,26 +18,22 @@ namespace LearningRateScheduler {
 
     class StepDecay : public LearningRateScheduler {
     public:
-        int interval = 0;
-        float learningRate = 0;
-        float decay = 0.5;
-
-        StepDecay(float initial_learning_rate, int interval, float decay) {
+        float decay   = 0;
+        int   interval = 0;
+        StepDecay(float initial_learning_rate, float decay, int interval) {
             this->initial_learning_rate = initial_learning_rate;
-            this->learningRate = initial_learning_rate;
-            this->interval = interval;
-            this->decay = decay;
+            this->decay                 = decay;
+            this->interval              = interval;
         }
 
-        void step() {
+        void step(float& learningRate) {
             steps++;
-            if (steps % interval == 0) {
-                learningRate *= decay;
-            }
+            learningRate = initial_learning_rate * std::pow(decay, std::floor(steps / interval));
         }
 
-        float getLearningRate() {
-            return learningRate;
+        friend std::ostream& operator<<(std::ostream& os, const StepDecay& step_decay) {
+            os << "StepDecay(initial_learning_rate=" << step_decay.initial_learning_rate << ", decay=" << step_decay.decay << ", interval=" << step_decay.interval << ")";
+            return os;
         }
     };
 } // namespace LearningRateScheduler

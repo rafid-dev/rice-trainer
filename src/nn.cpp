@@ -2,6 +2,7 @@
 #include "types.h"
 #include "quantize.h"
 #include "dataloader.h"
+#include <memory>
 #include <fstream>
 #include <iostream>
 #include <omp.h>
@@ -106,9 +107,9 @@ void NN::save(const std::string& path) {
 }
 
 void NN::quantize(const std::string& path, bool print){
-    QuantizedNN qnn{*this, print};
-    
-    qnn.save(path);
+    std::unique_ptr<QuantizedNN> qnn = std::make_unique<QuantizedNN>(*this, print);
+
+    qnn->save(path);
 
     if (print){
         std::cout << "Quantized network saved to " << path << std::endl;

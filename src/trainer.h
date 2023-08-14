@@ -4,8 +4,8 @@
 #include "lrscheduler.h"
 #include "misc.h"
 #include "nn.h"
-#include "types.h"
 #include "optimizer.h"
+#include "types.h"
 #include <filesystem>
 #include <vector>
 
@@ -32,11 +32,17 @@ public:
     LearningRateScheduler::StepDecay lrScheduler;
     Optimizer::Adam                  optimizer;
 
-    Trainer(const std::string& _path, const std::size_t _batchSize) : dataSetLoader{_path, _batchSize}, path(_path), lrScheduler(learningRate, lrDecayInterval, lrDecay), optimizer() {
+    // clang-format off
+    Trainer(const std::string& _path, const std::size_t _batchSize) : 
+        dataSetLoader{_path, _batchSize},
+        path(_path), 
+        lrScheduler{learningRate, lrDecay, lrDecayInterval}, optimizer() {
+            
         batchGradients.resize(THREADS);
         losses.resize(THREADS);
         nnGradients.clear();
     }
+    // clang-format on
 
     void loadFeatures(DataLoader::DataSetEntry& entry, Features& features);
     void clearGradientsAndLosses();

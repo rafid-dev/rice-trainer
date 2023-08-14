@@ -12,7 +12,7 @@ class QuantizedNN {
     public:
     using input_type = int16_t;
     using hidden_type = int16_t;
-    using Accumulator = std::array<input_type, HIDDEN_SIZE * 2>;
+    using Accumulator = std::array<int16_t, HIDDEN_SIZE * 2>;
     using Color = uint8_t;
 
     std::array<input_type, INPUT_SIZE * HIDDEN_SIZE> inputFeatures;
@@ -29,21 +29,21 @@ class QuantizedNN {
         for (int i = 0; i < INPUT_SIZE * HIDDEN_SIZE; i++) {
             float w = nn.inputFeatures[i];
             inputMax = std::max(inputMax, w);
-            input_type a = static_cast<input_type>(std::round(w * Q1));
+            int16_t a = static_cast<int16_t>(std::round(w * Q1));
             inputFeatures[i] = a;
         }
 
         for (int i = 0; i < HIDDEN_SIZE; i++) {
             float b = nn.inputBias[i];
             inputBiasMax = std::max(inputBiasMax, b);
-            input_type a = static_cast<input_type>(std::round(b * Q1));
+            int16_t a = static_cast<int16_t>(std::round(b * Q1));
             inputBias[i] = a;
         }
 
         for (int i = 0; i < HIDDEN_SIZE * 2; i++) {
             float w = nn.hiddenFeatures[i];
             hiddenMax = std::max(hiddenMax, w);
-            hidden_type a = static_cast<hidden_type>(std::round(w * Q2));
+            int16_t a = static_cast<int16_t>(std::round(w * Q2));
             hiddenFeatures[i] = a;
         }
 
