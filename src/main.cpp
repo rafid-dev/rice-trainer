@@ -38,6 +38,13 @@ int main(int argc, char* argv[]) {
 
     Trainer* trainer = new Trainer{datasetPath, 16384, valDatasetPath};
 
+    // Try to load checkpoint if provided.
+    // if this fails, the function will exit the program and show an error.
+    if (!checkpointPath.empty()) {
+        std::cout << "Loading checkpoint from " << checkpointPath << std::endl;
+        trainer->loadCheckpoint(checkpointPath);
+    }
+
     // Configure trainer
     trainer->setNetworkId(networkId);
     trainer->setMaxEpochs(epochs);
@@ -45,8 +52,6 @@ int main(int argc, char* argv[]) {
     trainer->setLearningRate(lr);
 
     // Print Configurations
-    std::cout << "Number of Available Threads: " << omp_get_max_threads() << "\n";
-    std::cout << "Allocated threads: " << THREADS << "\n";
     std::cout << "Dataset Path: " << datasetPath << "\n";
     std::cout << "Validation Dataset Path: " << valDatasetPath << "\n";
     std::cout << "Checkpoint Path: " << checkpointPath << "\n";
@@ -57,13 +62,8 @@ int main(int argc, char* argv[]) {
     std::cout << "LR Scheduler: " << trainer->lrScheduler << "\n";
     std::cout << "Epochs: " << trainer->getMaxEpochs() << "\n";
     std::cout << "Batchsize: " << trainer->getBatchSize() << "\n\n";
-
-    if (!checkpointPath.empty()) {
-        std::cout << "Loading checkpoint from " << checkpointPath << std::endl;
-        trainer->loadCheckpoint(checkpointPath);
-        std::cout << "Loaded checkpoint from " << checkpointPath << std::endl;
-    }
-
+    std::cout << "Number of Available Threads: " << omp_get_max_threads() << "\n";
+    std::cout << "Allocated threads: " << THREADS << "\n";
     std::cout << std::endl;
     
     trainer->train();

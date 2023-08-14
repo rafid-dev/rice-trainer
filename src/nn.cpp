@@ -84,10 +84,30 @@ void NN::load(const std::string& path) {
     std::ifstream file(path, std::ios::binary);
 
     if (file) {
-        file.read(reinterpret_cast<char*>(inputFeatures.data()), sizeof(inputFeatures));
-        file.read(reinterpret_cast<char*>(inputBias.data()), sizeof(inputBias));
-        file.read(reinterpret_cast<char*>(hiddenFeatures.data()), sizeof(hiddenFeatures));
-        file.read(reinterpret_cast<char*>(hiddenBias.data()), sizeof(hiddenBias));
+        bool sizeMismatch = false;
+
+        // Read inputFeatures
+        if (!file.read(reinterpret_cast<char*>(inputFeatures.data()), sizeof(inputFeatures)))
+            sizeMismatch = true;
+
+        // Read inputBias
+        if (!file.read(reinterpret_cast<char*>(inputBias.data()), sizeof(inputBias)))
+            sizeMismatch = true;
+
+        // Read hiddenFeatures
+        if (!file.read(reinterpret_cast<char*>(hiddenFeatures.data()), sizeof(hiddenFeatures)))
+            sizeMismatch = true;
+
+        // Read hiddenBias
+        if (!file.read(reinterpret_cast<char*>(hiddenBias.data()), sizeof(hiddenBias)))
+            sizeMismatch = true;
+
+        if (sizeMismatch) {
+            std::cout << "Error: Checkpoint data size mismatch in " << path << std::endl;
+            exit(0); // Exit
+        }
+
+        std::cout << "Loaded checkpoint file " << path << std::endl;
     } else {
         std::cout << "Couldn't read checkpoint file " << path << std::endl;
     }
