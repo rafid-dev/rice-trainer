@@ -214,7 +214,7 @@ void Trainer::train() {
 
         double valError = validate();
         std::cout << std::endl;
-        printf("epoch: [%5d/%5d] | val error: [%11.9f] | epoch error: [%11.9f]", epoch, maxEpochs, EPOCH_ERROR, valError);
+        printf("epoch: [%5d/%5d] | val error: [%11.9f] | epoch error: [%11.9f]", epoch, maxEpochs, valError, EPOCH_ERROR);
         std::cout << std::endl;
 
         // Save the loss

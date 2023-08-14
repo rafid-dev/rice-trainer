@@ -9,6 +9,7 @@ namespace LearningRateScheduler {
     public:
         float initial_learning_rate = 0;
         int   steps                 = 0;
+        int maxEpochs = 0;
 
         friend std::ostream& operator<<(std::ostream& os, const LearningRateScheduler& learning_rate_scheduler) {
             os << "LearningRateScheduler(initial_learning_rate=" << learning_rate_scheduler.initial_learning_rate << ")";
@@ -43,21 +44,20 @@ namespace LearningRateScheduler {
 
     class CosineAnnealing : public LearningRateScheduler {
     public:
-        int max_epochs = 0;
         CosineAnnealing(float initial_learning_rate, int max_epochs) {
             this->initial_learning_rate = initial_learning_rate;
-            this->max_epochs            = max_epochs;
+            this->maxEpochs            = max_epochs;
         }
 
         void step(float& learningRate, int epoch) {
             steps++;
             constexpr float PI         = 3.14159265358979323846f;
-            float           cos_factor = 0.5 * (1 + std::cos(PI * steps / static_cast<float>(max_epochs)));
+            float           cos_factor = 0.5 * (1 + std::cos(PI * steps / static_cast<float>(maxEpochs)));
             learningRate               = initial_learning_rate * cos_factor;
         }
 
         friend std::ostream& operator<<(std::ostream& os, const CosineAnnealing& cosine_annealing) {
-            os << "CosineAnnealing(initial_learning_rate=" << cosine_annealing.initial_learning_rate << ", max_epochs=" << cosine_annealing.max_epochs << ")";
+            os << "CosineAnnealing(initial_learning_rate=" << cosine_annealing.initial_learning_rate << ", max_epochs=" << cosine_annealing.maxEpochs << ")";
             return os;
         }
     };
@@ -83,13 +83,12 @@ namespace LearningRateScheduler {
 
     class CyclicalLearningRates : public LearningRateScheduler {
     public:
-        float base_lr    = 0;
         float max_lr     = 0;
         int   step_size  = 0;
         int   cycle_mult = 0;
 
         CyclicalLearningRates(float base_lr, float max_lr, int step_size, int cycle_mult = 1) {
-            this->base_lr    = base_lr;
+            this->initial_learning_rate    = base_lr;
             this->max_lr     = max_lr;
             this->step_size  = step_size;
             this->cycle_mult = cycle_mult;
@@ -99,11 +98,11 @@ namespace LearningRateScheduler {
             steps++;
             int   cycle  = std::floor(1 + steps / (2 * step_size));
             float x      = std::abs(steps / step_size - 2 * cycle + 1);
-            learningRate = base_lr + (max_lr - base_lr) * std::max(0.0f, (1 - x));
+            learningRate = initial_learning_rate + (max_lr - initial_learning_rate) * std::max(0.0f, (1 - x));
         }
 
         friend std::ostream& operator<<(std::ostream& os, const CyclicalLearningRates& clr) {
-            os << "CyclicalLearningRates(base_lr=" << clr.base_lr << ", max_lr=" << clr.max_lr << ", step_size=" << clr.step_size << ", cycle_mult=" << clr.cycle_mult << ")";
+            os << "CyclicalLearningRates(base_lr=" << clr.initial_learning_rate << ", max_lr=" << clr.max_lr << ", step_size=" << clr.step_size << ", cycle_mult=" << clr.cycle_mult << ")";
             return os;
         }
     };

@@ -90,10 +90,7 @@ public:
 
     void setMaxEpochs(const int _maxEpochs) {
         maxEpochs = _maxEpochs;
-
-        if (std::is_same<decltype(lrScheduler), LearningRateScheduler::CosineAnnealing>::value){
-            lrScheduler.max_epochs = maxEpochs;
-        }
+        lrScheduler.maxEpochs = maxEpochs;
     }
     void setEpochSize(const int _epochSize) {
         epochSize = _epochSize;
