@@ -60,13 +60,18 @@ namespace DataLoader {
         std::size_t positionIndex = 0;
 
         std::thread readingThread;
-        std::atomic<bool> dataLoaded = false;
+
+        bool backgroundLoading = true;
 
         DataSetLoader(const std::string& _path) : reader{_path}, path{_path} {
             init();
         }
 
         DataSetLoader(const std::string& _path, const std::size_t _batchSize) : reader{_path}, path{_path}, batchSize{_batchSize} {
+            init();
+        }
+
+        DataSetLoader(const std::string& _path, const std::size_t _batchSize, const bool _backgroundLoading) : reader{_path}, path{_path}, batchSize{_batchSize}, backgroundLoading{_backgroundLoading} {
             init();
         }
 

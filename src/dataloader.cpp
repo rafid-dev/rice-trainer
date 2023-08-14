@@ -16,8 +16,10 @@ namespace DataLoader {
             std::swap(currentData, nextData);
             positionIndex = 0;
 
-            // Begin a new thread to read nextData
-            readingThread = std::thread(&DataSetLoader::loadNext, this);
+            // Begin a new thread to read nextData if background loading is enabled
+            if (backgroundLoading){
+                readingThread = std::thread(&DataSetLoader::loadNext, this);
+            }
         }
     }
 

@@ -1,38 +1,41 @@
 import argparse
-import pandas as pd
+import csv
 import matplotlib.pyplot as plt
 
-# Set up argument parser
-parser = argparse.ArgumentParser(description='Plot epoch and error data.')
-parser.add_argument('csv_file', type=str, help='Path to CSV file containing epoch and error data')
-parser.add_argument('--logx', action='store_true', help='Use logarithmic scale for x-axis')
+def plot_metrics(csv_file):
+    epochs = []
+    train_errors = []
+    val_errors = []
+    learning_rates = []
 
-args = parser.parse_args()
+    with open(csv_file, 'r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            epochs.append(int(row['epoch']))
+            train_errors.append(float(row['train_error']))
+            val_errors.append(float(row['val_error']))
+            learning_rates.append(float(row['learning_rate']))
 
-csv_file_path = args.csv_file
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
 
-try:
-    # Read the CSV file
-    data = pd.read_csv(csv_file_path)
+    axs[0].plot(epochs, train_errors, label='Train Error')
+    axs[0].plot(epochs, val_errors, label='Validation Error')
+    axs[0].set_ylabel('Error')
+    axs[0].set_xlabel('Epoch')
+    axs[0].legend()
 
-    # Extract epoch and error columns
-    epochs = data['epoch']
-    errors = data['avg_epoch_error']
+    axs[1].plot(epochs, learning_rates, color='orange')
+    axs[1].set_ylabel('Learning Rate')
+    axs[1].set_xlabel('Epoch')
 
-    # Create a line plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs, errors, marker='o')
-    plt.title('Epoch vs. Average Epoch Error')
-    plt.xlabel('Epoch')
-    plt.ylabel('Average Epoch Error')
+    axs[0].xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
 
-    if args.logx:
-        plt.xscale('log')  # Set x-axis to logarithmic scale
-
-    plt.grid(True)
+    plt.tight_layout()
     plt.show()
 
-except FileNotFoundError:
-    print("File not found:", csv_file_path)
-except Exception as e:
-    print("An error occurred:", str(e))
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Plot training metrics from a CSV file.')
+    parser.add_argument('csv_file', type=str, help='Path to the CSV file containing training metrics')
+    args = parser.parse_args()
+
+    plot_metrics(args.csv_file)

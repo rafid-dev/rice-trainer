@@ -160,7 +160,7 @@ void        Trainer::applyGradients(std::array<uint8_t, INPUT_SIZE>& actives) {
 
 void Trainer::train() {
     std::ofstream lossFile(savePath + "/loss.csv", std::ios::app);
-    lossFile << "epoch,avg_epoch_error" << std::endl;
+    lossFile << "epoch,train_error,val_error,learning_rate" << std::endl;
 
     const std::size_t batchSize = dataSetLoader.batchSize;
 
@@ -205,9 +205,6 @@ void Trainer::train() {
             }
         }
 
-        std::cout << std::endl;
-        printf("epoch: [%5d/%5d] | avg_epoch_error: [%11.9f]\n", epoch, maxEpochs, EPOCH_ERROR);
-
         // Save the network
         if (epoch % saveInterval == 0) {
             save(std::to_string(epoch));
@@ -215,7 +212,12 @@ void Trainer::train() {
 
         lrScheduler.step(learningRate);
 
-        lossFile << epoch << "," << EPOCH_ERROR << std::endl;
+        double valError = validate();
+        std::cout << std::endl;
+        printf("epoch: [%5d/%5d] | epoch error: [%11.9f] | val error: [%11.9f]\n", epoch, maxEpochs, EPOCH_ERROR, valError);
+
+        // Save the loss
+        lossFile << epoch << "," << EPOCH_ERROR << "," << valError << "," << learningRate << std::endl;
     }
 }
 
@@ -224,4 +226,57 @@ void Trainer::clearGradientsAndLosses() {
         grad.clear();
     }
     memset(losses.data(), 0, sizeof(float) * THREADS);
+}
+
+void Trainer::validationBatch(std::vector<float>& validationLosses) {
+    #pragma omp parallel for schedule(static) num_threads(THREADS)
+    for (int batchIdx = 0; batchIdx < valDataSetLoader.batchSize; batchIdx++) {
+        const int threadId = omp_get_thread_num();
+
+        // Load the current batch entry
+        DataLoader::DataSetEntry& entry = valDataSetLoader.getEntry(batchIdx);
+
+        alignas(32) NN::Accumulator accumulator;
+        NN::Color       stm = NN::Color(entry.sideToMove());
+        Features        featureset;
+
+        loadFeatures(entry, featureset);
+
+        const auto eval = entry.score();
+        const auto wdl  = entry.wdl();
+
+        //--- Forward Pass ---//
+        const float output = nn.forward(accumulator, featureset, stm);
+
+        validationLosses[threadId] += errorFunction(output, eval, wdl);
+    }
+}
+
+double Trainer::validate(){
+    std::size_t   batchIterations = 0;
+    double        epochError      = 0.0;
+
+    for (int b = 0; b < VAL_EPOCH_SIZE / valDataSetLoader.batchSize; ++b) {
+        batchIterations++;
+        double batchError = 0;
+
+        std::vector<float> validationLosses;
+        validationLosses.resize(THREADS);
+        std::memset(validationLosses.data(), 0, sizeof(validationLosses));
+
+        validationBatch(validationLosses);
+
+        // Calculate batch error
+        for (int threadId = 0; threadId < THREADS; ++threadId) {
+            batchError += static_cast<double>(validationLosses[threadId]);
+        }
+
+        // Accumulate epoch error
+        epochError += batchError;
+
+        // Load the next batch
+        valDataSetLoader.loadNextBatch();
+    }
+
+    return epochError / static_cast<double>(valDataSetLoader.batchSize * batchIterations);
 }

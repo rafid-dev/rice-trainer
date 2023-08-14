@@ -7,12 +7,13 @@
 
 int main(int argc, char* argv[]) {
     ArgumentParser parser;
-    parser.addArgument("--dataset", "Path to the dataset.");
-    parser.addArgument("--epochs", "Number of epochs to train for.");
-    parser.addArgument("--id", "Network ID. Leave for random. Use '$' for a random number placeholder.", true);
-    parser.addArgument("--lr", "Learning rate. (Default 0.001)", true);
-    parser.addArgument("--checkpoint", "Path to the checkpoint to load from.", true);
-    parser.addArgument("--savepath", "Path to where checkpoints will be saved.", true);
+    parser.addArgument("--data", "Path to training data.");
+    parser.addArgument("--val-data", "Path to validation data.");
+    parser.addArgument("--epochs", "Number of epochs.");
+    parser.addArgument("--id", "Unique network identifier.", true);
+    parser.addArgument("--lr", "Initial learning rate. (Default: 0.001)", true);
+    parser.addArgument("--checkpoint", "Path to checkpoint.", true);
+    parser.addArgument("--save", "Checkpoint save directory.", true);
     parser.setProgramName(argv[0]);
 
     // Print help and exit if no arguments or --help flag provided
@@ -27,14 +28,15 @@ int main(int argc, char* argv[]) {
     }
 
     // Extract values from parsed arguments
-    std::string datasetPath    = parser.getArgumentValue("--dataset");
+    std::string datasetPath    = parser.getArgumentValue("--data");
+    std::string valDatasetPath = parser.getArgumentValue("--val-data");
     std::string checkpointPath = parser.getArgumentValue("--checkpoint");
-    std::string savepath       = parser.getArgumentValue("--savepath");
+    std::string savepath       = parser.getArgumentValue("--save");
     std::string networkId      = parser.getArgumentValue("--id");
     int         epochs         = std::stoi(parser.getArgumentValue("--epochs"));
     float       lr             = parser.getArgumentValue("--lr").empty() ? 0.001f : std::stof(parser.getArgumentValue("--lr"));
 
-    Trainer* trainer = new Trainer{datasetPath, 16384};
+    Trainer* trainer = new Trainer{datasetPath, 16384, valDatasetPath};
 
     // Configure trainer
     trainer->setNetworkId(networkId);
@@ -46,6 +48,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Number of Available Threads: " << omp_get_max_threads() << "\n";
     std::cout << "Allocated threads: " << THREADS << "\n";
     std::cout << "Dataset Path: " << datasetPath << "\n";
+    std::cout << "Validation Dataset Path: " << valDatasetPath << "\n";
     std::cout << "Checkpoint Path: " << checkpointPath << "\n";
     std::cout << "Save Path: " << savepath << "\n";
     std::cout << "Network ID: " << trainer->getNetworkId() << "\n\n";

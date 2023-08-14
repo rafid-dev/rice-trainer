@@ -25,6 +25,7 @@ private:
 
 public:
     DataLoader::DataSetLoader        dataSetLoader;
+    DataLoader::DataSetLoader        valDataSetLoader;
     NN                               nn;
     NNGradients                      nnGradients;
     std::vector<BatchGradients>      batchGradients;
@@ -33,8 +34,8 @@ public:
     Optimizer::Adam                  optimizer;
 
     // clang-format off
-    Trainer(const std::string& _path, const std::size_t _batchSize) : 
-        dataSetLoader{_path, _batchSize},
+    Trainer(const std::string& _path, const std::size_t _batchSize, const std::string& val_path = "") : 
+        dataSetLoader{_path, _batchSize}, valDataSetLoader{val_path, _batchSize, false},
         path(_path), 
         lrScheduler{learningRate, lrDecay, lrDecayInterval}, optimizer() {
             
@@ -49,6 +50,8 @@ public:
     void train();
     void batch(std::array<uint8_t, INPUT_SIZE>& active);
     void applyGradients(std::array<uint8_t, INPUT_SIZE>& active);
+    void validationBatch(std::vector<float>&);
+    double validate();
 
     std::size_t getBatchSize() const {
         return dataSetLoader.batchSize;
