@@ -14,6 +14,10 @@ namespace LearningRateScheduler {
             os << "LearningRateScheduler(initial_learning_rate=" << learning_rate_scheduler.initial_learning_rate << ")";
             return os;
         }
+
+        void reset() {
+            steps = 0;
+        }
     };
 
     class StepDecay : public LearningRateScheduler {
