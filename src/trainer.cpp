@@ -210,11 +210,12 @@ void Trainer::train() {
             save(std::to_string(epoch));
         }
 
-        lrScheduler.step(learningRate);
+        lrScheduler.step(learningRate, epoch);
 
         double valError = validate();
         std::cout << std::endl;
-        printf("epoch: [%5d/%5d] | epoch error: [%11.9f] | val error: [%11.9f]\n", epoch, maxEpochs, EPOCH_ERROR, valError);
+        printf("epoch: [%5d/%5d] | val error: [%11.9f] | epoch error: [%11.9f]", epoch, maxEpochs, EPOCH_ERROR, valError);
+        std::cout << std::endl;
 
         // Save the loss
         lossFile << epoch << "," << EPOCH_ERROR << "," << valError << "," << learningRate << std::endl;

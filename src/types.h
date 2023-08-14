@@ -18,7 +18,7 @@ constexpr float EVAL_CP_RATIO = 0.7f;
 
 constexpr int THREADS = 6;
 
-constexpr std::size_t EPOCH_SIZE = 1e9;
+constexpr std::size_t EPOCH_SIZE = 1e7;
 constexpr std::size_t VAL_EPOCH_SIZE = 1e7;
 
 constexpr int KING_BUCKET[64] {
@@ -33,8 +33,12 @@ constexpr int KING_BUCKET[64] {
 };
 
 static inline int kingSquareIndex(int kingSquare, uint8_t kingColor) {
-    kingSquare = (56 * kingColor) ^ kingSquare;
-    return KING_BUCKET[kingSquare];
+    if constexpr(BUCKETS > 1){
+        kingSquare = (56 * kingColor) ^ kingSquare;
+        return KING_BUCKET[kingSquare];
+    }else{
+        return 0;
+    }
 }
 
 static inline int inputIndex(uint8_t pieceType, uint8_t pieceColor, int square, uint8_t view, int kingSquare) {

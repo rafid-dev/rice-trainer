@@ -19,7 +19,7 @@ def plot_metrics(csv_file):
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
 
     axs[0].plot(epochs, train_errors, label='Train Error')
-    axs[0].plot(epochs, val_errors, label='Validation Error')
+    axs[0].plot(epochs, val_errors, label='Validation Error', color='red')
     axs[0].set_ylabel('Error')
     axs[0].set_xlabel('Epoch')
     axs[0].legend()

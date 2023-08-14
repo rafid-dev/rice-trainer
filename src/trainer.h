@@ -8,6 +8,7 @@
 #include "types.h"
 #include <filesystem>
 #include <vector>
+#include <type_traits>
 
 class Trainer {
 private:
@@ -16,7 +17,7 @@ private:
 
     std::string savePath;
     std::string networkId;
-    int         maxEpochs    = 0;
+    int         maxEpochs    = 1000;
     float       learningRate = 0.01;
 
     int   lrDecayInterval = 15;
@@ -30,14 +31,14 @@ public:
     NNGradients                      nnGradients;
     std::vector<BatchGradients>      batchGradients;
     std::vector<float>               losses;
-    LearningRateScheduler::StepDecay lrScheduler;
+    LearningRateScheduler::CosineAnnealing lrScheduler;
     Optimizer::Adam                  optimizer;
 
     // clang-format off
     Trainer(const std::string& _path, const std::size_t _batchSize, const std::string& val_path = "") : 
         dataSetLoader{_path, _batchSize}, valDataSetLoader{val_path, _batchSize, false},
         path(_path), 
-        lrScheduler{learningRate, lrDecay, lrDecayInterval}, optimizer() {
+        lrScheduler{learningRate, maxEpochs}, optimizer() {
             
         batchGradients.resize(THREADS);
         losses.resize(THREADS);
@@ -89,6 +90,10 @@ public:
 
     void setMaxEpochs(const int _maxEpochs) {
         maxEpochs = _maxEpochs;
+
+        if (std::is_same<decltype(lrScheduler), LearningRateScheduler::CosineAnnealing>::value){
+            lrScheduler.max_epochs = maxEpochs;
+        }
     }
     void setEpochSize(const int _epochSize) {
         epochSize = _epochSize;

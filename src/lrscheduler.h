@@ -43,8 +43,8 @@ namespace LearningRateScheduler {
 
     class CosineAnnealing : public LearningRateScheduler {
     public:
-        float max_epochs = 0;
-        CosineAnnealing(float initial_learning_rate, float max_epochs) {
+        int max_epochs = 0;
+        CosineAnnealing(float initial_learning_rate, int max_epochs) {
             this->initial_learning_rate = initial_learning_rate;
             this->max_epochs            = max_epochs;
         }
@@ -52,7 +52,7 @@ namespace LearningRateScheduler {
         void step(float& learningRate, int epoch) {
             steps++;
             constexpr float PI         = 3.14159265358979323846f;
-            float           cos_factor = 0.5 * (1 + std::cos(PI * steps / max_epochs));
+            float           cos_factor = 0.5 * (1 + std::cos(PI * steps / static_cast<float>(max_epochs)));
             learningRate               = initial_learning_rate * cos_factor;
         }
 
