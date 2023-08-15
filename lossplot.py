@@ -16,26 +16,32 @@ def plot_metrics(csv_file):
             val_errors.append(float(row['val_error']))
             learning_rates.append(float(row['learning_rate']))
 
-    # Plot Train Error and Learning Rate in one figure
-    fig_train, axs_train = plt.subplots(1, 2, figsize=(12, 6))
-    axs_train[0].plot(epochs, train_errors, label='Train Error')
-    axs_train[0].set_ylabel('Error')
-    axs_train[0].set_xlabel('Epoch')
-    axs_train[0].legend()
+    # Create a subplot for epoch and validation errors
+    fig_errors, axs_errors = plt.subplots(1, 2, figsize=(14, 6))
 
-    axs_train[1].plot(epochs, learning_rates, color='orange')
-    axs_train[1].set_ylabel('Learning Rate')
-    axs_train[1].set_xlabel('Epoch')
+    # Plot Epoch Error in the first subplot
+    axs_errors[0].plot(epochs, train_errors, label='Train Error', color='blue')
+    axs_errors[0].set_ylabel('Error')
+    axs_errors[0].set_xlabel('Epoch')
+    axs_errors[0].legend()
+    axs_errors[0].xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
 
-    axs_train[0].xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
+    # Plot Validation Error in the second subplot
+    axs_errors[1].plot(epochs, val_errors, label='Validation Error', color='red')
+    axs_errors[1].set_ylabel('Error')
+    axs_errors[1].set_xlabel('Epoch')
+    axs_errors[1].legend()
+    axs_errors[1].xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
 
-    # Plot Validation Error in another figure
-    fig_val, ax_val = plt.subplots(figsize=(8, 6))
-    ax_val.plot(epochs, val_errors, label='Validation Error', color='red')
-    ax_val.set_ylabel('Error')
-    ax_val.set_xlabel('Epoch')
-    ax_val.legend()
-    ax_val.xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
+    plt.tight_layout()
+
+    # Create a separate figure for the learning rate
+    fig_lr, ax_lr = plt.subplots(figsize=(8, 6))
+    ax_lr.plot(epochs, learning_rates, label='Learning Rate', color='orange')
+    ax_lr.set_ylabel('Learning Rate')
+    ax_lr.set_xlabel('Epoch')
+    ax_lr.legend()
+    ax_lr.xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
 
     plt.tight_layout()
     plt.show()
