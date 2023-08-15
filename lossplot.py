@@ -16,19 +16,26 @@ def plot_metrics(csv_file):
             val_errors.append(float(row['val_error']))
             learning_rates.append(float(row['learning_rate']))
 
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    # Plot Train Error and Learning Rate in one figure
+    fig_train, axs_train = plt.subplots(1, 2, figsize=(12, 6))
+    axs_train[0].plot(epochs, train_errors, label='Train Error')
+    axs_train[0].set_ylabel('Error')
+    axs_train[0].set_xlabel('Epoch')
+    axs_train[0].legend()
 
-    axs[0].plot(epochs, train_errors, label='Train Error')
-    axs[0].plot(epochs, val_errors, label='Validation Error', color='red')
-    axs[0].set_ylabel('Error')
-    axs[0].set_xlabel('Epoch')
-    axs[0].legend()
+    axs_train[1].plot(epochs, learning_rates, color='orange')
+    axs_train[1].set_ylabel('Learning Rate')
+    axs_train[1].set_xlabel('Epoch')
 
-    axs[1].plot(epochs, learning_rates, color='orange')
-    axs[1].set_ylabel('Learning Rate')
-    axs[1].set_xlabel('Epoch')
+    axs_train[0].xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
 
-    axs[0].xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
+    # Plot Validation Error in another figure
+    fig_val, ax_val = plt.subplots(figsize=(8, 6))
+    ax_val.plot(epochs, val_errors, label='Validation Error', color='red')
+    ax_val.set_ylabel('Error')
+    ax_val.set_xlabel('Epoch')
+    ax_val.legend()
+    ax_val.xaxis.set_major_locator(plt.MaxNLocator(integer=True))  # Set X-axis to display integers
 
     plt.tight_layout()
     plt.show()
