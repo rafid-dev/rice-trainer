@@ -24,10 +24,6 @@ namespace DataLoader {
     }
 
     void DataSetLoader::loadNext() {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<> randomProbability(0.0, 1.0);
-
         for (std::size_t counter = 0; counter < CHUNK_SIZE; ++counter) {
             // If we finished, go back to the beginning
             if (!reader.hasNext()) {
@@ -42,7 +38,7 @@ namespace DataLoader {
             bool earlySkip = positionEntry.entry.ply <= 16;
             bool filter = positionEntry.entry.isInCheck() || positionEntry.entry.isCapturingMove();
 
-            if (positionEntry.entry.score == 32002 || earlySkip || filter || randomProbability(gen) < 0.3) {
+            if (positionEntry.entry.score == 32002 || earlySkip || filter) {
                 counter--;
                 continue;
             }
