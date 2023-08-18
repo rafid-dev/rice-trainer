@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "nn.h"
 
 // turn off warnings for this
 #pragma GCC diagnostic push
@@ -62,6 +63,8 @@ namespace DataLoader {
         std::thread readingThread;
 
         bool backgroundLoading = true;
+
+        int random_fen_skipping = 16;
 
         DataSetLoader(const std::string& _path) : reader{_path}, path{_path} {
             init();

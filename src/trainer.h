@@ -22,7 +22,7 @@ private:
     float       learningRate = 0.01;
 
     int   lrDecayInterval = 15;
-    float lrDecay         = 0.3;
+    float lrDecay         = 0.05;
     int   saveInterval    = 1;
 
     float start_lambda = 1;
@@ -170,5 +170,9 @@ public:
     void setDecay(const int _lrDecayInterval, const float _lrDecay) {
         lrDecayInterval = _lrDecayInterval;
         lrDecay         = _lrDecay;
+    }
+
+    void setRandomFenSkipping(const int _random_fen_skipping) {
+        dataSetLoader.random_fen_skipping = _random_fen_skipping;
     }
 };

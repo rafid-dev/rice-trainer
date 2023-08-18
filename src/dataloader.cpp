@@ -17,14 +17,17 @@ namespace DataLoader {
             positionIndex = 0;
 
             // Begin a new thread to read nextData if background loading is enabled
-            if (backgroundLoading){
+            if (backgroundLoading) {
                 readingThread = std::thread(&DataSetLoader::loadNext, this);
             }
         }
     }
 
     void DataSetLoader::loadNext() {
-
+        std::random_device          rd;
+        std::mt19937                mt{rd()};
+        double                      prob = random_fen_skipping / (random_fen_skipping + 1);
+        std::bernoulli_distribution dist(prob);
 
         for (std::size_t counter = 0; counter < CHUNK_SIZE; ++counter) {
             // If we finished, go back to the beginning
@@ -38,7 +41,12 @@ namespace DataLoader {
             positionEntry.entry = reader.next();
 
             bool earlySkip = positionEntry.entry.ply <= 16;
-            bool filter = positionEntry.entry.isCapturingMove() || positionEntry.entry.isInCheck();
+            bool filter    = positionEntry.entry.isCapturingMove() || positionEntry.entry.isInCheck();
+
+            if (dist(mt)) {
+                counter--;
+                continue;
+            }
 
             if (positionEntry.entry.score == 32002 || earlySkip || filter) {
                 counter--;
@@ -51,7 +59,7 @@ namespace DataLoader {
 
     void DataSetLoader::shuffle() {
         std::random_device rd;
-        std::mt19937 mt{rd()};
+        std::mt19937       mt{rd()};
         std::shuffle(permuteShuffle.begin(), permuteShuffle.end(), mt);
     }
 
@@ -66,7 +74,7 @@ namespace DataLoader {
         loadNext();
     }
 
-    void DataSetEntry::loadFeatures(Features& features) const{
+    void DataSetEntry::loadFeatures(Features& features) const {
         const chess::Position& pos    = entry.pos;
         chess::Bitboard        pieces = pos.piecesBB();
 
@@ -85,7 +93,7 @@ namespace DataLoader {
         }
     }
 
-    Features DataSetEntry::loadFeatures() const{
+    Features DataSetEntry::loadFeatures() const {
         Features features;
         loadFeatures(features);
         return features;

@@ -1,6 +1,6 @@
 #include "argparse.h"
-#include "trainer.h"
 #include "quantize.h"
+#include "trainer.h"
 
 #include <omp.h>
 #include <sstream>
@@ -12,6 +12,7 @@ int main(int argc, char* argv[]) {
     parser.addArgument("--epochs", "Number of epochs.");
     parser.addArgument("--start-lambda", "Starting lambda value. (Default: 1)", true);
     parser.addArgument("--end-lambda", "Ending lambda value. (Default: 0.7)", true);
+    parser.addArgument("--skip", "Skip N fens on average (Default 16)", true);
     parser.addArgument("--id", "Unique network identifier.", true);
     parser.addArgument("--lr", "Initial learning rate. (Default: 0.001)", true);
     parser.addArgument("--checkpoint", "Path to checkpoint.", true);
@@ -37,9 +38,9 @@ int main(int argc, char* argv[]) {
     std::string networkId      = parser.getArgumentValue("--id");
     int         epochs         = std::stoi(parser.getArgumentValue("--epochs"));
     float       lr             = parser.getArgumentValue("--lr").empty() ? 0.001f : std::stof(parser.getArgumentValue("--lr"));
-    float      startLambda    = parser.getArgumentValue("--start-lambda").empty() ? 1.0f : std::stof(parser.getArgumentValue("--start-lambda"));
-    float      endLambda      = parser.getArgumentValue("--end-lambda").empty() ? 0.7f : std::stof(parser.getArgumentValue("--end-lambda"));
-    
+    float       startLambda    = parser.getArgumentValue("--start-lambda").empty() ? 1.0f : std::stof(parser.getArgumentValue("--start-lambda"));
+    float       endLambda      = parser.getArgumentValue("--end-lambda").empty() ? 0.7f : std::stof(parser.getArgumentValue("--end-lambda"));
+    int         skip           = parser.getArgumentValue("--skip").empty() ? 16 : std::stoi(parser.getArgumentValue("--skip"));
 
     Trainer* trainer = new Trainer{datasetPath, 16384, valDatasetPath};
 
@@ -57,6 +58,7 @@ int main(int argc, char* argv[]) {
     trainer->setSavePath(savepath);
     trainer->setLearningRate(lr);
     trainer->setLambda(startLambda, endLambda);
+    trainer->setRandomFenSkipping(skip);
 
     // Print Configurations
     std::cout << "Dataset Path: " << datasetPath << "\n";
@@ -67,6 +69,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Learning Rate: " << trainer->getLearningRate() << "\n";
     std::cout << "Optimizer: " << trainer->optimizer << "\n";
     std::cout << "LR Scheduler: " << trainer->lrScheduler << "\n";
+    std::cout << "Fen Skipping: " << skip << "\n";
     std::cout << "Start Lambda: " << trainer->getStartLambda() << "\n";
     std::cout << "End Lambda: " << trainer->getEndLambda() << "\n";
     std::cout << "Epochs: " << trainer->getMaxEpochs() << "\n";
@@ -74,7 +77,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Number of Available Threads: " << omp_get_max_threads() << "\n";
     std::cout << "Allocated threads: " << THREADS << "\n";
     std::cout << std::endl;
-    
+
     trainer->train();
 
     return 0;
