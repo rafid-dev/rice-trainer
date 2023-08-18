@@ -24,6 +24,8 @@ namespace DataLoader {
     }
 
     void DataSetLoader::loadNext() {
+
+
         for (std::size_t counter = 0; counter < CHUNK_SIZE; ++counter) {
             // If we finished, go back to the beginning
             if (!reader.hasNext()) {
@@ -36,7 +38,7 @@ namespace DataLoader {
             positionEntry.entry = reader.next();
 
             bool earlySkip = positionEntry.entry.ply <= 16;
-            bool filter = positionEntry.entry.isInCheck() || positionEntry.entry.isCapturingMove();
+            bool filter = positionEntry.entry.isCapturingMove() || positionEntry.entry.isInCheck();
 
             if (positionEntry.entry.score == 32002 || earlySkip || filter) {
                 counter--;

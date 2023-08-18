@@ -5,6 +5,10 @@
 
 #define EPOCH_ERROR epochError / static_cast<double>(dataSetLoader.batchSize * batchIterations)
 
+inline float expectedEval(float eval, float wdl, float lambda) {
+    return lambda * sigmoid(eval) + (1 - lambda) * wdl;
+}
+
 inline float errorFunction(float output, float eval, float wdl) {
     float expected = EVAL_CP_RATIO * sigmoid(eval) + (1 - EVAL_CP_RATIO) * wdl;
     return pow(sigmoid(output) - expected, 2);
@@ -15,23 +19,12 @@ inline float errorGradient(float output, float eval, float wdl) {
     return 2 * (sigmoid(output) - expected);
 }
 
-void Trainer::loadFeatures(DataLoader::DataSetEntry& entry, Features& features) {
-    const chess::Position& pos    = entry.entry.pos;
-    chess::Bitboard        pieces = pos.piecesBB();
+inline float errorFunction(float output, float expected) {
+    return pow(sigmoid(output) - expected, 2);
+}
 
-    const chess::Square ksq_White = pos.kingSquare(chess::Color::White);
-    const chess::Square ksq_Black = pos.kingSquare(chess::Color::Black);
-
-    for (chess::Square sq : pieces) {
-        const chess::Piece piece      = pos.pieceAt(sq);
-        const std::uint8_t pieceType  = static_cast<uint8_t>(piece.type());
-        const std::uint8_t pieceColor = static_cast<uint8_t>(piece.color());
-
-        const int featureW = inputIndex(pieceType, pieceColor, static_cast<int>(sq), static_cast<uint8_t>(chess::Color::White), static_cast<int>(ksq_White));
-        const int featureB = inputIndex(pieceType, pieceColor, static_cast<int>(sq), static_cast<uint8_t>(chess::Color::Black), static_cast<int>(ksq_Black));
-
-        features.add(featureW, featureB);
-    }
+inline float errorGradient(float output, float expected) {
+    return 2 * (sigmoid(output) - expected);
 }
 
 void Trainer::batch(std::array<uint8_t, INPUT_SIZE>& active) {
@@ -45,41 +38,43 @@ void Trainer::batch(std::array<uint8_t, INPUT_SIZE>& active) {
         DataLoader::DataSetEntry& entry = dataSetLoader.getEntry(batchIdx);
 
         alignas(32) NN::Accumulator accumulator;
-        NN::Color       stm = NN::Color(entry.sideToMove());
-        Features        featureset;
+        NN::Color                   stm = NN::Color(entry.sideToMove());
+        Features                    featureset;
 
-        loadFeatures(entry, featureset);
+        entry.loadFeatures(featureset);
 
-        const auto eval = entry.score();
-        const auto wdl  = entry.wdl();
+        const float eval     = entry.score();
+        const float wdl      = entry.wdl();
+        const float lambda   = getLambda();
+        const float expected = expectedEval(eval, wdl, lambda);
 
         //--- Forward Pass ---//
         const float output = nn.forward(accumulator, featureset, stm);
 
-        losses[threadId] += errorFunction(output, eval, wdl);
+        losses[threadId] += errorFunction(output, expected);
 
         //--- Backward Pass ---//
         BatchGradients& gradients   = batchGradients[threadId];
-        const float     outGradient = errorGradient(output, eval, wdl) * sigmoidPrime(output);
+        const float     outGradient = errorGradient(output, expected) * sigmoidPrime(output);
 
         // Hidden bias
         gradients.hiddenBias[0] += outGradient;
 
         // Hidden features
-        #pragma omp simd
+#pragma omp simd
         for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
             gradients.hiddenFeatures[i] += outGradient * accumulator[i];
         }
 
         std::array<float, HIDDEN_SIZE * 2> hiddenLosses;
 
-        #pragma omp simd
+#pragma omp simd
         for (int i = 0; i < HIDDEN_SIZE * 2; ++i) {
             hiddenLosses[i] = outGradient * nn.hiddenFeatures[i] * ReLUPrime(accumulator[i]);
         }
 
         // Input bias
-        #pragma omp simd
+#pragma omp simd
         for (int i = 0; i < HIDDEN_SIZE; ++i) {
             gradients.inputBias[i] += hiddenLosses[i] + hiddenLosses[i + HIDDEN_SIZE];
         }
@@ -92,7 +87,7 @@ void Trainer::batch(std::array<uint8_t, INPUT_SIZE>& active) {
             actives[threadId][f1] = 1;
             actives[threadId][f2] = 1;
 
-            #pragma omp simd
+#pragma omp simd
             for (int j = 0; j < HIDDEN_SIZE; ++j) {
                 gradients.inputFeatures[f1 * HIDDEN_SIZE + j] += hiddenLosses[j];
                 gradients.inputFeatures[f2 * HIDDEN_SIZE + j] += hiddenLosses[j + HIDDEN_SIZE];
@@ -115,7 +110,7 @@ void        Trainer::applyGradients(std::array<uint8_t, INPUT_SIZE>& actives) {
             continue;
 
         for (int j = 0; j < HIDDEN_SIZE; ++j) {
-            int   index = i * HIDDEN_SIZE + j;
+            int   index       = i * HIDDEN_SIZE + j;
             float gradientSum = 0;
 
             for (int k = 0; k < THREADS; ++k) {
@@ -164,7 +159,7 @@ void Trainer::train() {
 
     const std::size_t batchSize = dataSetLoader.batchSize;
 
-    for (int epoch = 1; epoch <= maxEpochs; ++epoch) {
+    for (currentEpoch = 1; currentEpoch <= maxEpochs; ++currentEpoch) {
         std::uint64_t start           = Misc::getTimeMs();
         std::size_t   batchIterations = 0;
         double        epochError      = 0.0;
@@ -200,25 +195,26 @@ void Trainer::train() {
                 std::uint64_t end            = Misc::getTimeMs();
                 int           positionsCount = (b + 1) * batchSize;
                 int           posPerSec      = static_cast<int>(positionsCount / ((end - start) / 1000.0));
-                printf("\rep/ba:[%4d/%4d] |batch error:[%1.9f]|epoch error:[%1.9f]|speed:[%9d] pos/s", epoch, b, batchError / static_cast<double>(dataSetLoader.batchSize), EPOCH_ERROR, posPerSec);
+                printf("\rep/ba:[%4d/%4d] |batch error:[%1.9f]|epoch error:[%1.9f]|speed:[%9d] pos/s", currentEpoch, b, batchError / static_cast<double>(dataSetLoader.batchSize), EPOCH_ERROR, posPerSec);
                 std::cout << std::flush;
             }
         }
 
         // Save the network
-        if (epoch % saveInterval == 0) {
-            save(std::to_string(epoch));
+        if (currentEpoch % saveInterval == 0) {
+            save(std::to_string(currentEpoch));
         }
 
-        lrScheduler.step(learningRate, epoch);
+        // Decay learning rate
+        lrScheduler.step(learningRate);
 
         double valError = validate();
         std::cout << std::endl;
-        printf("epoch: [%5d/%5d] | val error: [%11.9f] | epoch error: [%11.9f]", epoch, maxEpochs, valError, EPOCH_ERROR);
+        printf("epoch: [%5d/%5d] | val error: [%11.9f] | epoch error: [%11.9f]", currentEpoch, maxEpochs, valError, EPOCH_ERROR);
         std::cout << std::endl;
 
         // Save the loss
-        lossFile << epoch << "," << EPOCH_ERROR << "," << valError << "," << learningRate << std::endl;
+        lossFile << currentEpoch << "," << EPOCH_ERROR << "," << valError << "," << learningRate << std::endl;
     }
 }
 
@@ -229,8 +225,8 @@ void Trainer::clearGradientsAndLosses() {
     memset(losses.data(), 0, sizeof(float) * THREADS);
 }
 
-void Trainer::validationBatch(std::vector<float>& validationLosses) {
-    #pragma omp parallel for schedule(static) num_threads(THREADS)
+void        Trainer::validationBatch(std::vector<float>& validationLosses) {
+#pragma omp parallel for schedule(static) num_threads(THREADS)
     for (int batchIdx = 0; batchIdx < valDataSetLoader.batchSize; batchIdx++) {
         const int threadId = omp_get_thread_num();
 
@@ -238,10 +234,10 @@ void Trainer::validationBatch(std::vector<float>& validationLosses) {
         DataLoader::DataSetEntry& entry = valDataSetLoader.getEntry(batchIdx);
 
         alignas(32) NN::Accumulator accumulator;
-        NN::Color       stm = NN::Color(entry.sideToMove());
-        Features        featureset;
+        NN::Color                   stm = NN::Color(entry.sideToMove());
+        Features                    featureset;
 
-        loadFeatures(entry, featureset);
+        entry.loadFeatures(featureset);
 
         const auto eval = entry.score();
         const auto wdl  = entry.wdl();
@@ -253,9 +249,9 @@ void Trainer::validationBatch(std::vector<float>& validationLosses) {
     }
 }
 
-double Trainer::validate(){
-    std::size_t   batchIterations = 0;
-    double        epochError      = 0.0;
+double Trainer::validate() {
+    std::size_t batchIterations = 0;
+    double      epochError      = 0.0;
 
     for (int b = 0; b < VAL_EPOCH_SIZE / valDataSetLoader.batchSize; ++b) {
         batchIterations++;

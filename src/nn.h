@@ -3,11 +3,8 @@
 #include <cstdint>
 #include <array>
 #include <algorithm>
-#include "types.h"
 #include <immintrin.h>
-
-float errorFunction(float output, float eval, float wdl);
-float errorGradient(float output, float eval, float wdl);
+#include "types.h"
 
 template<typename T = float>
 static inline const T ReLU(const T x){
