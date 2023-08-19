@@ -49,7 +49,7 @@ void NN::testFen(const std::string& fen) const {
 }
 
 // The forward pass of the network
-float NN::forward(Accumulator& accumulator, Features& features, Color stm) const {
+float NN::forward(Accumulator& accumulator, const Features& features, Color stm) const {
     float output = hiddenBias[0]; // Initialize with the bias
 
     float* stmAccumulator = accumulator.data();

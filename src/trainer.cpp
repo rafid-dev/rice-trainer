@@ -38,10 +38,8 @@ void Trainer::batch(std::array<uint8_t, INPUT_SIZE>& active) {
         DataLoader::DataSetEntry& entry = dataSetLoader.getEntry(batchIdx);
 
         alignas(32) NN::Accumulator accumulator;
-        NN::Color                   stm = NN::Color(entry.sideToMove());
-        Features                    featureset;
-
-        entry.loadFeatures(featureset);
+        NN::Color                   stm        = NN::Color(entry.sideToMove());
+        const Features&             featureset = entry.extractFeatures();
 
         const float eval     = entry.score();
         const float wdl      = entry.wdl();
@@ -234,10 +232,8 @@ void        Trainer::validationBatch(std::vector<float>& validationLosses) {
         DataLoader::DataSetEntry& entry = valDataSetLoader.getEntry(batchIdx);
 
         alignas(32) NN::Accumulator accumulator;
-        NN::Color                   stm = NN::Color(entry.sideToMove());
-        Features                    featureset;
-
-        entry.loadFeatures(featureset);
+        NN::Color                   stm        = NN::Color(entry.sideToMove());
+        const Features&             featureset = entry.extractFeatures();
 
         const auto eval = entry.score();
         const auto wdl  = entry.wdl();

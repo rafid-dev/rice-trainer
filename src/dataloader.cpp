@@ -19,6 +19,8 @@ namespace DataLoader {
             // Begin a new thread to read nextData if background loading is enabled
             if (backgroundLoading) {
                 readingThread = std::thread(&DataSetLoader::loadNext, this);
+            } else {
+                loadNext();
             }
         }
     }
@@ -29,29 +31,50 @@ namespace DataLoader {
         double                      prob = random_fen_skipping / (random_fen_skipping + 1);
         std::bernoulli_distribution dist(prob);
 
+        std::vector<binpack::TrainingDataEntry> entries;
+        entries.reserve(CHUNK_SIZE);
+
+        static constexpr int VALUE_NONE = 32002;
+
         for (std::size_t counter = 0; counter < CHUNK_SIZE; ++counter) {
+            if (dist(mt)) {
+                continue;
+            }
+
             // If we finished, go back to the beginning
             if (!reader.hasNext()) {
                 reader = binpack::CompressedTrainingDataEntryReader(path);
             }
 
-            DataSetEntry& positionEntry = nextData[permuteShuffle[counter]];
-
             // Get info
-            positionEntry.entry = reader.next();
+            binpack::TrainingDataEntry entry = reader.next();
 
-            bool earlySkip = positionEntry.entry.ply <= 16;
-            bool filter    = positionEntry.entry.isCapturingMove() || positionEntry.entry.isInCheck();
-
-            if (dist(mt)) {
-                counter--;
+            // Skip if the entry is too early
+            if (entry.ply <= 16) {
                 continue;
             }
 
-            if (positionEntry.entry.score == 32002 || earlySkip || filter) {
-                counter--;
+            // Skip if the entry is a capturing move
+            if (entry.isCapturingMove()) {
                 continue;
             }
+
+            // Skip if the entry is in check
+            if (entry.isInCheck()) {
+                continue;
+            }
+
+            // Skip if the entry score is none
+            if (entry.score == VALUE_NONE) {
+                continue;
+            }
+
+            entries.push_back(entry);
+        }
+
+#pragma omp parallel for schedule(static) num_threads(THREADS)
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            nextData[permuteShuffle[i]].loadEntry(entries[i]);
         }
 
         shuffle();
@@ -74,7 +97,8 @@ namespace DataLoader {
         loadNext();
     }
 
-    void DataSetEntry::loadFeatures(Features& features) const {
+    void loadFeatures(const binpack::TrainingDataEntry& entry, Features& features) {
+        features.clear();
         const chess::Position& pos    = entry.pos;
         chess::Bitboard        pieces = pos.piecesBB();
 
@@ -93,9 +117,4 @@ namespace DataLoader {
         }
     }
 
-    Features DataSetEntry::loadFeatures() const {
-        Features features;
-        loadFeatures(features);
-        return features;
-    }
 } // namespace DataLoader

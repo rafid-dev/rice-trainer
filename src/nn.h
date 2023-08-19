@@ -66,13 +66,13 @@ struct Features
     uint8_t n = 0;
     std::array<std::array<int16_t, 2>, 32> features;
 
-    void add(int16_t featureWhite, int16_t featureBlack)
+    inline void add(int16_t featureWhite, int16_t featureBlack)
     {
         features[n][0] = featureWhite;
         features[n][1] = featureBlack;
         n++;
     }
-    void clear()
+    inline void clear()
     {
         n = 0;
     }
@@ -105,7 +105,7 @@ struct NN {
         std::memset(hiddenBias.data(), 0, sizeof(float) * OUTPUT_SIZE);
     }
 
-    float forward(Accumulator& accumulator, Features& features, Color stm) const;
+    float forward(Accumulator& accumulator, const Features& features, Color stm) const;
     void testFen(const std::string& fen) const;
     void load(const std::string& path);
     void save(const std::string& path);

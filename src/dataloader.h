@@ -24,30 +24,49 @@ struct Features;
 
 namespace DataLoader {
 
-    struct DataSetEntry {
-        binpack::TrainingDataEntry entry;
+    void loadFeatures(const binpack::TrainingDataEntry& entry, Features& features);
 
+    struct DataSetEntry {
+    private:
+        int16_t _score;
+        int8_t  _result;
+        Features _features;
+        uint8_t _sideToMove;
+    public:
         const float score() const {
-            return entry.score / EVAL_SCALE;
+            return _score / EVAL_SCALE;
         }
 
         const float wdl() const {
-            return entry.result == -1 ? 1.0 : entry.result == 0 ? 0.5 : 0.0;
+            return _result == -1 ? 1.0 : _result == 0 ? 0.5 : 0.0;
         }
 
-        const float target() const {
-            float p_target = 1 / (1 + expf(-score()));
-            float w_target = wdl();
-
-            return p_target * EVAL_CP_RATIO + w_target * (1 - EVAL_CP_RATIO);
+        const uint8_t sideToMove() const {
+            return _sideToMove;
         }
 
-        const auto sideToMove() const {
-            return entry.pos.sideToMove();
+        void setScore(const int16_t score) {
+            _score = score;
         }
 
-        void loadFeatures(Features& features) const;
-        Features loadFeatures() const;
+        void setResult(const int8_t result) {
+            _result = result;
+        }
+
+        void setSideToMove(const uint8_t sideToMove) {
+            _sideToMove = sideToMove;
+        }
+    
+        const Features& extractFeatures() const {
+            return _features;
+        }
+
+        const void loadEntry(const binpack::TrainingDataEntry& entry) {
+            _score = entry.score;
+            _result = entry.result;
+            _sideToMove = uint8_t(entry.pos.sideToMove());
+            loadFeatures(entry, _features);
+        }
     };
 
     struct DataSetLoader {

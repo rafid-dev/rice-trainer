@@ -49,6 +49,10 @@ public:
         return "";
     }
 
+    bool argumentExists(const std::string& name) const {
+        return arguments.count(name) > 0;
+    }
+
     void printHelp() const {
         std::cout << "Usage: " << programName << " [options]\n";
 
