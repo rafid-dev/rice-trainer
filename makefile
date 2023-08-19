@@ -10,6 +10,7 @@ DEBUG_CXXFLAGS := -gdwarf-2 -O0 -fsanitize=address
 SRC_DIR := src
 BUILD_DIR := build
 BIN_DIR := bin
+PGO_DIR := pgo_data
 
 # Source files
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
@@ -20,7 +21,7 @@ TARGET := $(BIN_DIR)/CarbonTrainer
 
 # Append .exe to the binary name on Windows
 ifeq ($(OS),Windows_NT)
-	TARGET := $(TARGET).exe
+    TARGET := $(TARGET).exe
 endif
 
 # Default target
@@ -44,10 +45,17 @@ debug: $(TARGET)
 
 # Clean the build
 clean:
-	rm -rf $(BUILD_DIR) $(BIN_DIR)
+	rm -rf $(BUILD_DIR) $(BIN_DIR) $(PGO_DIR)
+
+# PGO-generate target
+pgo-generate: CXXFLAGS += -fprofile-generate
+pgo-generate: clean $(TARGET)
+
+pgo-pg: CXXFLAGS += -pg
+pgo-pg: clean $(TARGET)
 
 # Phony targets
-.PHONY: all debug clean
+.PHONY: all debug clean pgo-generate
 
 # Disable built-in rules and variables
 .SUFFIXES:
