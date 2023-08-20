@@ -58,7 +58,7 @@ public:
     double validate();
 
     std::size_t getBatchSize() const {
-        return dataSetLoader.batchSize;
+        return dataSetLoader.m_batchSize;
     }
 
     void setNetworkId(const std::string& _networkId) {
@@ -173,6 +173,6 @@ public:
     }
 
     void setRandomFenSkipping(const int _random_fen_skipping) {
-        dataSetLoader.random_fen_skipping = _random_fen_skipping;
+        dataSetLoader.m_random_fen_skipping = _random_fen_skipping;
     }
 };

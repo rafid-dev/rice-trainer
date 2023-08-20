@@ -3,22 +3,36 @@
 #include <ctime>
 
 namespace DataLoader {
-    void DataSetLoader::loadNextBatch() {
-        positionIndex += batchSize;
 
-        if (positionIndex == CHUNK_SIZE) {
-            // Join thread that's reading nextData
-            if (readingThread.joinable()) {
-                readingThread.join();
+    static constexpr int VALUE_NONE = 32002;
+    void DataSetLoader::loadFromBuffer() {
+        m_currentDataSize = m_buffer.size();
+
+        // Permute shuffle
+        shuffle();
+
+#pragma omp parallel for schedule(static) num_threads(THREADS)
+        // Convert entries into features
+        for (std::size_t i = 0; i < m_buffer.size(); ++i) {
+            const auto& entry = m_buffer[i];
+            m_currentData[m_permuteShuffle[i]].loadEntry(entry);
+        }
+
+    }
+
+    void DataSetLoader::loadNextBatch() {
+        m_positionIndex = std::min(m_positionIndex + m_batchSize, m_currentDataSize);
+
+        if (m_positionIndex == m_currentDataSize) {
+            if (m_readingThread.joinable()) {
+                m_readingThread.join();
             }
 
-            // Bring next data to current position
-            std::swap(currentData, nextData);
-            positionIndex = 0;
+            m_positionIndex = 0;
+            loadFromBuffer();
 
-            // Begin a new thread to read nextData if background loading is enabled
-            if (backgroundLoading) {
-                readingThread = std::thread(&DataSetLoader::loadNext, this);
+            if (m_backgroundLoading) {
+                m_readingThread = std::thread(&DataSetLoader::loadNext, this);
             } else {
                 loadNext();
             }
@@ -28,13 +42,10 @@ namespace DataLoader {
     void DataSetLoader::loadNext() {
         std::random_device          rd;
         std::mt19937                mt{rd()};
-        double                      prob = random_fen_skipping / (random_fen_skipping + 1);
+        double                      prob = m_random_fen_skipping / (m_random_fen_skipping + 1);
         std::bernoulli_distribution dist(prob);
 
-        std::vector<binpack::TrainingDataEntry> entries;
-        entries.reserve(CHUNK_SIZE);
-
-        static constexpr int VALUE_NONE = 32002;
+        m_buffer.clear();
 
         for (std::size_t counter = 0; counter < CHUNK_SIZE; ++counter) {
             if (dist(mt)) {
@@ -42,12 +53,12 @@ namespace DataLoader {
             }
 
             // If we finished, go back to the beginning
-            if (!reader.hasNext()) {
-                reader = binpack::CompressedTrainingDataEntryReader(path);
+            if (!m_reader.hasNext()) {
+                m_reader = binpack::CompressedTrainingDataEntryReader(m_path);
             }
 
             // Get info
-            binpack::TrainingDataEntry entry = reader.next();
+            binpack::TrainingDataEntry entry = m_reader.next();
 
             // Skip if the entry is too early
             if (entry.ply <= 16) {
@@ -69,31 +80,15 @@ namespace DataLoader {
                 continue;
             }
 
-            entries.push_back(entry);
+            m_buffer.push_back(entry);
         }
-
-#pragma omp parallel for schedule(static) num_threads(THREADS)
-        for (std::size_t i = 0; i < entries.size(); ++i) {
-            nextData[permuteShuffle[i]].loadEntry(entries[i]);
-        }
-
-        shuffle();
-    }
-
-    void DataSetLoader::shuffle() {
-        std::random_device rd;
-        std::mt19937       mt{rd()};
-        std::shuffle(permuteShuffle.begin(), permuteShuffle.end(), mt);
     }
 
     void DataSetLoader::init() {
-        positionIndex = 0;
-
-        std::iota(permuteShuffle.begin(), permuteShuffle.end(), 0);
-        shuffle();
-
+        m_positionIndex = 0;
+        
         loadNext();
-        std::swap(currentData, nextData);
+        loadFromBuffer();
         loadNext();
     }
 

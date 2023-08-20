@@ -3,7 +3,7 @@
 #include "optimizer.h"
 #include <omp.h>
 
-#define EPOCH_ERROR epochError / static_cast<double>(dataSetLoader.batchSize * batchIterations)
+#define EPOCH_ERROR epochError / static_cast<double>(batchSize * batchIterations)
 
 inline float expectedEval(float eval, float wdl, float lambda) {
     return lambda * sigmoid(eval) + (1 - lambda) * wdl;
@@ -31,7 +31,7 @@ void Trainer::batch(std::array<uint8_t, INPUT_SIZE>& active) {
     std::array<std::array<uint8_t, INPUT_SIZE>, THREADS> actives;
     std::memset(actives.data(), 0, sizeof(actives));
 #pragma omp parallel for schedule(static) num_threads(THREADS)
-    for (int batchIdx = 0; batchIdx < dataSetLoader.batchSize; batchIdx++) {
+    for (int batchIdx = 0; batchIdx < dataSetLoader.m_batchSize; batchIdx++) {
         const int threadId = omp_get_thread_num();
 
         // Load the current batch entry
@@ -155,7 +155,7 @@ void Trainer::train() {
     std::ofstream lossFile(savePath + "/loss.csv", std::ios::app);
     lossFile << "epoch,train_error,val_error,learning_rate" << std::endl;
 
-    const std::size_t batchSize = dataSetLoader.batchSize;
+    const std::size_t batchSize = dataSetLoader.m_batchSize;
 
     for (currentEpoch = 1; currentEpoch <= maxEpochs; ++currentEpoch) {
         std::uint64_t start           = Misc::getTimeMs();
@@ -193,7 +193,7 @@ void Trainer::train() {
                 std::uint64_t end            = Misc::getTimeMs();
                 int           positionsCount = (b + 1) * batchSize;
                 int           posPerSec      = static_cast<int>(positionsCount / ((end - start) / 1000.0));
-                printf("\rep/ba:[%4d/%4d] |batch error:[%1.9f]|epoch error:[%1.9f]|speed:[%9d] pos/s", currentEpoch, b, batchError / static_cast<double>(dataSetLoader.batchSize), EPOCH_ERROR, posPerSec);
+                printf("\rep/ba:[%4d/%4d] |batch error:[%1.9f]|epoch error:[%1.9f]|speed:[%9d] pos/s", currentEpoch, b, batchError / static_cast<double>(batchSize), EPOCH_ERROR, posPerSec);
                 std::cout << std::flush;
             }
         }
@@ -225,7 +225,7 @@ void Trainer::clearGradientsAndLosses() {
 
 void        Trainer::validationBatch(std::vector<float>& validationLosses) {
 #pragma omp parallel for schedule(static) num_threads(THREADS)
-    for (int batchIdx = 0; batchIdx < valDataSetLoader.batchSize; batchIdx++) {
+    for (int batchIdx = 0; batchIdx < valDataSetLoader.m_batchSize; batchIdx++) {
         const int threadId = omp_get_thread_num();
 
         // Load the current batch entry
@@ -249,7 +249,7 @@ double Trainer::validate() {
     std::size_t batchIterations = 0;
     double      epochError      = 0.0;
 
-    for (int b = 0; b < VAL_EPOCH_SIZE / valDataSetLoader.batchSize; ++b) {
+    for (int b = 0; b < VAL_EPOCH_SIZE / valDataSetLoader.m_batchSize; ++b) {
         batchIterations++;
         double batchError = 0;
 
@@ -271,5 +271,5 @@ double Trainer::validate() {
         valDataSetLoader.loadNextBatch();
     }
 
-    return epochError / static_cast<double>(valDataSetLoader.batchSize * batchIterations);
+    return epochError / static_cast<double>(valDataSetLoader.m_batchSize * batchIterations);
 }
