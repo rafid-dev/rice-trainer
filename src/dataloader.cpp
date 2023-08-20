@@ -42,7 +42,7 @@ namespace DataLoader {
     void DataSetLoader::loadNext() {
         std::random_device          rd;
         std::mt19937                mt{rd()};
-        double                      prob = m_random_fen_skipping / (m_random_fen_skipping + 1);
+        double                      prob = static_cast<double>(m_random_fen_skipping) / (m_random_fen_skipping + 1);
         std::bernoulli_distribution dist(prob);
 
         m_buffer.clear();
