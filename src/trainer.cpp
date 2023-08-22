@@ -153,9 +153,7 @@ void        Trainer::applyGradients(std::array<uint8_t, INPUT_SIZE>& actives) {
 
 void Trainer::train() {
     std::ofstream lossFile(savePath + "/loss.csv", std::ios::app);
-    std::ofstream batchLossFile(savePath + "/batch_loss.csv", std::ios::app);
     lossFile << "epoch,train_error,val_error,learning_rate" << std::endl;
-    batchLossFile << "batch,batch_error" << std::endl;
 
     const std::size_t batchSize = dataSetLoader.m_batchSize;
 
@@ -197,9 +195,6 @@ void Trainer::train() {
                 int           posPerSec      = static_cast<int>(positionsCount / ((end - start) / 1000.0));
                 printf("\rep/ba:[%4d/%4d] |batch error:[%1.9f]|epoch error:[%1.9f]|speed:[%9d] pos/s", currentEpoch, b, batchError / static_cast<double>(batchSize), EPOCH_ERROR, posPerSec);
                 std::cout << std::flush;
-
-                // Save the batch loss
-                batchLossFile << b << "," << batchError / static_cast<double>(batchSize) << std::endl;
             }
         }
 
