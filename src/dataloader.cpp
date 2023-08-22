@@ -5,7 +5,8 @@
 namespace DataLoader {
 
     static constexpr int VALUE_NONE = 32002;
-    void DataSetLoader::loadFromBuffer() {
+    void                 DataSetLoader::loadFromBuffer() {
+        
         m_currentDataSize = m_buffer.size();
 
         // Permute shuffle
@@ -17,7 +18,6 @@ namespace DataLoader {
             const auto& entry = m_buffer[i];
             m_currentData[m_permuteShuffle[i]].loadEntry(entry);
         }
-
     }
 
     void DataSetLoader::loadNextBatch() {
@@ -39,16 +39,14 @@ namespace DataLoader {
         }
     }
 
-    void DataSetLoader::loadNext() {
+    void DataSetLoader::tryFillBuffer() {
         std::random_device          rd;
         std::mt19937                mt{rd()};
         double                      prob = static_cast<double>(m_random_fen_skipping) / (m_random_fen_skipping + 1);
         std::bernoulli_distribution dist(prob);
 
-        m_buffer.clear();
-
         for (std::size_t counter = 0; counter < CHUNK_SIZE; ++counter) {
-            if (dist(mt)) {
+            if (m_random_fen_skipping && dist(mt)) {
                 continue;
             }
 
@@ -84,9 +82,17 @@ namespace DataLoader {
         }
     }
 
+    void DataSetLoader::loadNext() {
+        m_buffer.clear();
+
+        while(m_buffer.size() < m_batchSize){
+            tryFillBuffer();
+        }
+    }
+
     void DataSetLoader::init() {
         m_positionIndex = 0;
-        
+
         loadNext();
         loadFromBuffer();
         loadNext();
@@ -94,6 +100,8 @@ namespace DataLoader {
 
     void loadFeatures(const binpack::TrainingDataEntry& entry, Features& features) {
         features.clear();
+        features.stm = static_cast<uint8_t>(entry.pos.sideToMove());
+        
         const chess::Position& pos    = entry.pos;
         chess::Bitboard        pieces = pos.piecesBB();
 

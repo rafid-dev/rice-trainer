@@ -35,14 +35,14 @@ public:
     NNGradients                            nnGradients;
     std::vector<BatchGradients>            batchGradients;
     std::vector<float>                     losses;
-    LearningRateScheduler::ExponentialDecay lrScheduler;
+    LearningRateScheduler::CosineAnnealing lrScheduler;
     Optimizer::Adam                        optimizer;
 
     // clang-format off
     Trainer(const std::string& _path, const std::size_t _batchSize, const std::string& val_path = "") : 
-        dataSetLoader{_path, _batchSize}, valDataSetLoader{val_path, _batchSize, false},
+        dataSetLoader{_path, _batchSize}, valDataSetLoader{val_path, 16384, false},
         path(_path), 
-        lrScheduler{learningRate, lrDecay}, optimizer() {
+        lrScheduler{learningRate, maxEpochs}, optimizer() {
             
         batchGradients.resize(THREADS);
         losses.resize(THREADS);

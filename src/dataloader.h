@@ -96,6 +96,7 @@ namespace DataLoader {
             init();
         }
 
+        void tryFillBuffer();
         void loadFromBuffer();
         void loadNext();
         void loadNextBatch();

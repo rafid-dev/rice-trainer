@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
     parser.addArgument("--lr", "Initial learning rate. (Default: 0.001)", true);
     parser.addArgument("--checkpoint", "Path to checkpoint.", true);
     parser.addArgument("--save", "Checkpoint save directory.", true);
+    parser.addArgument("--batchsize", "Batch size. (Default: 16384)", true);
     parser.setProgramName(argv[0]);
 
     // Print help and exit if no arguments or --help flag provided
@@ -41,8 +42,9 @@ int main(int argc, char* argv[]) {
     float       startLambda    = parser.getArgumentValue("--start-lambda").empty() ? 1.0f : std::stof(parser.getArgumentValue("--start-lambda"));
     float       endLambda      = parser.getArgumentValue("--end-lambda").empty() ? 0.7f : std::stof(parser.getArgumentValue("--end-lambda"));
     int         skip           = parser.getArgumentValue("--skip").empty() ? 16 : std::stoi(parser.getArgumentValue("--skip"));
+    std::size_t         batchSize      = parser.getArgumentValue("--batchsize").empty() ? 16384 : std::stoull(parser.getArgumentValue("--batchsize"));
 
-    Trainer* trainer = new Trainer{datasetPath, 16384, valDatasetPath};
+    Trainer* trainer = new Trainer{datasetPath, batchSize, valDatasetPath};
 
     // Try to load checkpoint if provided.
     // if this fails, the function will exit the program and show an error.
@@ -79,6 +81,8 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl;
 
     trainer->train();
+
+    delete trainer;
 
     return 0;
 }

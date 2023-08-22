@@ -66,6 +66,8 @@ struct Features
     uint8_t n = 0;
     std::array<std::array<int16_t, 2>, 32> features;
 
+    uint8_t stm;
+
     inline void add(int16_t featureWhite, int16_t featureBlack)
     {
         features[n][0] = featureWhite;
@@ -74,6 +76,7 @@ struct Features
     }
     inline void clear()
     {
+        stm = 0;
         n = 0;
     }
 };
