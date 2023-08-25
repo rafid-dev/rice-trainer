@@ -46,10 +46,6 @@ namespace DataLoader {
         std::bernoulli_distribution dist(prob);
 
         for (std::size_t counter = 0; counter < CHUNK_SIZE; ++counter) {
-            if (m_random_fen_skipping && dist(mt)) {
-                continue;
-            }
-
             // If we finished, go back to the beginning
             if (!m_reader.hasNext()) {
                 m_reader = binpack::CompressedTrainingDataEntryReader(m_path);
@@ -57,6 +53,11 @@ namespace DataLoader {
 
             // Get info
             binpack::TrainingDataEntry entry = m_reader.next();
+
+            // Skip randomly
+            if (m_random_fen_skipping && dist(mt)) {
+                continue;
+            }
 
             // Skip if the entry is too early
             if (entry.ply <= 16) {
