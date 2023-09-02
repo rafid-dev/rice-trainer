@@ -39,7 +39,7 @@ namespace DataLoader {
         }
 
         const float wdl() const {
-            return _result == 1 ? 1.0 : _result == 0 ? 0.5 : 0.0;
+            return (_result + 1.0f) / 2.0f;
         }
 
         const uint8_t sideToMove() const {
