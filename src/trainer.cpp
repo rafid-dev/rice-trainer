@@ -207,8 +207,7 @@ void Trainer::train() {
         // lrScheduler.step(learningRate, currentEpoch);
 
         double valError = validate();
-        std::cout << std::endl;
-        printf("epoch: [%5d/%5d] | val error: [%11.9f] | epoch error: [%11.9f]", currentEpoch, maxEpochs, valError, EPOCH_ERROR);
+        printf(" val error: [%11.9f]", valError);
         std::cout << std::endl;
 
         // Save the loss
