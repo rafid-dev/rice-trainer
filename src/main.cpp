@@ -10,9 +10,9 @@ int main(int argc, char* argv[]) {
     parser.addArgument("--data", "Path to training data.");
     parser.addArgument("--val-data", "Path to validation data.");
     parser.addArgument("--epochs", "Number of epochs.");
-    parser.addArgument("--start-lambda", "Starting lambda value. (Default: 1)", true);
+    parser.addArgument("--start-lambda", "Starting lambda value. (Default: 0.7)", true);
     parser.addArgument("--end-lambda", "Ending lambda value. (Default: 0.7)", true);
-    parser.addArgument("--skip", "Skip N fens on average (Default 16)", true);
+    parser.addArgument("--skip", "Skip N fens on average (Default 0)", true);
     parser.addArgument("--id", "Unique network identifier.", true);
     parser.addArgument("--lr", "Initial learning rate. (Default: 0.001)", true);
     parser.addArgument("--checkpoint", "Path to checkpoint.", true);
@@ -39,9 +39,9 @@ int main(int argc, char* argv[]) {
     std::string networkId      = parser.getArgumentValue("--id");
     int         epochs         = std::stoi(parser.getArgumentValue("--epochs"));
     float       lr             = parser.getArgumentValue("--lr").empty() ? 0.001f : std::stof(parser.getArgumentValue("--lr"));
-    float       startLambda    = parser.getArgumentValue("--start-lambda").empty() ? 1.0f : std::stof(parser.getArgumentValue("--start-lambda"));
+    float       startLambda    = parser.getArgumentValue("--start-lambda").empty() ? 0.7f : std::stof(parser.getArgumentValue("--start-lambda"));
     float       endLambda      = parser.getArgumentValue("--end-lambda").empty() ? 0.7f : std::stof(parser.getArgumentValue("--end-lambda"));
-    int         skip           = parser.getArgumentValue("--skip").empty() ? 16 : std::stoi(parser.getArgumentValue("--skip"));
+    int         skip           = parser.getArgumentValue("--skip").empty() ? 0 : std::stoi(parser.getArgumentValue("--skip"));
     std::size_t         batchSize      = parser.getArgumentValue("--batchsize").empty() ? 16384 : std::stoull(parser.getArgumentValue("--batchsize"));
 
     Trainer* trainer = new Trainer{datasetPath, batchSize, valDatasetPath};
