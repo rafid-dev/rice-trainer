@@ -71,7 +71,7 @@ namespace DataLoader {
 
         bool m_backgroundLoading = true;
 
-        int m_random_fen_skipping = 16;
+        int m_random_fen_skipping = 0;
         int m_early_fen_skipping  = 16;
 
         std::vector<binpack::TrainingDataEntry> m_buffer;
